@@ -37,11 +37,31 @@
 
     const map = L.map('map').setView([44.8, 20.5], 8);
 
+// 1. Definiši sve slojeve
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap'
+});
+
+const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© CartoDB'
+});
+
+const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© CartoDB'
+});
+
 const maptilerStreets = L.tileLayer('https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=0wkPcjtVob4kkwHe6rHY', {
   attribution: '&copy; MapTiler & OpenStreetMap contributors'
 });
 
+// 2. Inicijalizuj mapu sa početnim slojem
+const map = L.map('map', {
+  center: [44.8, 20.5],
+  zoom: 10,
+  layers: [osm] // možeš staviti maptilerStreets ako želiš da bude početni
+});
 
+// 3. Dodaj kontrolu slojeva
 const baseLayers = {
   "OpenStreetMap": osm,
   "Svetla mapa": cartoLight,
