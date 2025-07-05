@@ -3,32 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ruta po URL-u</title>
+  <title>Ruta bez API ključa (OSRM)</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body { margin: 0; padding: 0; height: 100%; }
     #map { width: 100%; height: 100vh; }
+    #error { position: absolute; top: 10px; left: 10px; background: #f44336; color: white; padding: 10px; z-index: 1000; display: none; border-radius: 4px; }
   </style>
 </head>
 <body>
+  <div id="error">Greška: Ruta nije mogla da se prikaže. Proveri koordinate.</div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
-  <script src="https://unpkg.com/lrm-openrouteservice/dist/lrm-openrouteservice.min.js"></script>
 
   <script>
-    const apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijg4OTEzNGE2M2UzMzRjY2ZhNWE4MmM3Y2ZhN2UwOGViIiwiaCI6Im11cm11cjY0In0=';
-
     function getWaypointsFromURL() {
       const params = new URLSearchParams(window.location.search);
       const wpParam = params.get('wp');
       if (!wpParam) return null;
 
-      return wpParam.split('|').map(coord => {
-        const [lat, lng] = coord.split(',').map(Number);
-        return L.latLng(lat, lng);
-      });
+      try {
+        return wpParam.split('|').map(coord => {
+          const [lat, lng] = coord.split(',').map(Number);
+          if (isNaN(lat) || isNaN(lng)) throw new Error("Neispravne koordinate");
+          return L.latLng(lat, lng);
+        });
+      } catch (e) {
+        return null;
+      }
     }
 
     const map = L.map('map').setView([44.8, 20.5], 8);
@@ -44,9 +48,11 @@
       L.latLng(45.2671, 19.8335)  // Novi Sad
     ];
 
-    L.Routing.control({
+    const control = L.Routing.control({
       waypoints: waypoints,
-      router: L.Routing.openrouteservice(apiKey),
+      router: L.Routing.osrmv1({
+        serviceUrl: 'https://router.project-osrm.org/route/v1'
+      }),
       lineOptions: {
         styles: [{ color: 'blue', opacity: 0.7, weight: 5 }]
       },
@@ -54,6 +60,11 @@
         return L.marker(wp.latLng).bindPopup(`Tačka ${i + 1}`);
       }
     }).addTo(map);
+
+    control.on('routingerror', function(e) {
+      document.getElementById('error').style.display = 'block';
+      console.error('Greška pri rutiranju:', e.error);
+    });
   </script>
 </body>
 </html>
