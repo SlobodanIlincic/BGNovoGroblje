@@ -37,10 +37,12 @@
 
     const map = L.map('map').setView([44.8, 20.5], 8);
 
-    L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-  maxZoom: 17,
-  attribution: '© OpenStreetMap contributors, SRTM | OpenTopoMap'
+
+    L.tileLayer('https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=0wkPcjtVob4kkwHe6rHY', {
+  attribution: '&copy; MapTiler & OpenStreetMap contributors'
 }).addTo(map);
+
+
 
 
 
