@@ -1,463 +1,59 @@
-﻿<html lang="en">
+<!DOCTYPE html>
+<html lang="sr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grobovi u Pančevu</title>
-    <script src="https://cdn.maptiler.com/maptiler-sdk-js/v1.1.1/maptiler-sdk.umd.min.js"></script>
-    <link href="https://cdn.maptiler.com/maptiler-sdk-js/v1.1.1/maptiler-sdk.css" rel="stylesheet" />
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-
-        #map {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 100%;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ruta po URL-u</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+    #map { width: 100%; height: 100vh; }
+  </style>
 </head>
 <body>
-    <style type="text/css">
-        #info {
-            display: block;
-            position: relative;
-            top: 0;
-            bottom: 0;
-            margin: 20px auto;
-            width: 30%;
-            padding: 10px;
-            border: none;
-            border-radius: 3px;
-            font-size: 16px;
-            text-align: center;
-            color: #222;
-            background: #fff;
-        }
-    </style>
-    <div id="map"></div>
-    <pre id="info"></pre>
-    <script>
-        function convertLetters(strin) {
-            return strin.replaceAll("%20", " ").replaceAll("%C4%86", "Ć").replaceAll("%C4%8C", "Č").replaceAll("%C5%A0", "Š").replaceAll("%C5%BD", "Ž").replaceAll("%C4%90", "Đ").replaceAll("%C3%96", "OE");
-        }
-      
-       var element = document.baseURI;
-       var popup1 = new maptilersdk.Popup({ closeOnClick: false })
-       var marker = new maptilersdk.Marker()
-       var intZoom = 18;
-       var sURLVariables = element.split('&'); 
-        for (var i = 0; i < sURLVariables.length; i++) {
-            var sParameterName = sURLVariables[i].split('=');
-            if (sParameterName[0][sParameterName[0].length - 1] == "x") {
-                var sPAramX = parseFloat(sParameterName[1].replace(",", "."))
-            }
-            if (sParameterName[0] == "y") {
-                var sPAramY = parseFloat(sParameterName[1].replace(",", "."))
-            }
-            if (sParameterName[0] == "s") {
-                var sVar = sParameterName[1].split('#')
-            }
-            if (sParameterName[0] == "q") {
-                var sVar1 = sParameterName[1].split('#')
-            }
-        }
-        maptilersdk.config.apiKey = '0wkPcjtVob4kkwHe6rHY';
-      
-        var map = new maptilersdk.Map({
-            container: 'map', // container's id or the HTML element to render the map
-          //  style: maptilersdk.MapStyle.STREETS,
-           //    style: maptilersdk.MapStyle.HYBRID,
-          //    style:  "topo-v2",
-           style: "openstreetmap",
-          // style: "satellite-v2",
-          //     style:   maptilersdk.MapStyle.BASIC,
-            center: [sPAramX, sPAramY], // starting position [lng, lat]
-            zoom: 13, // starting zoom
-            attributionControl: false
-        });
-        map.on('mousemove', function (e) {
-            document.getElementById('info').innerHTML =
-                // e.point is the x, y coordinates of the mousemove event relative
-                // to the top-left corner of the map
-               // JSON.stringify(e.point) +
-               "Zakupac:" + convertLetters(sVar1[0]) + "\n"
-                + "Plaćeno do:" + convertLetters(sVar1[1]) + "\n" + "Parcela/Red/Broj:" + convertLetters(sVar1[3]) + '/' + convertLetters(sVar1[2]) + '/' + convertLetters(sVar1[4] + "\n" + "Veličina:" + convertLetters(sVar1[5]) +  "\n" +
-                    JSON.stringify(e.lngLat.wrap())); 
-        });
+  <div id="map"></div>
 
-        map.on('mouseenter', 'КАТ01', function () {
-            map.getCanvas().style.cursor = 'pointer';
-        });
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+  <script src="https://unpkg.com/lrm-openrouteservice/dist/lrm-openrouteservice.min.js"></script>
 
-        map.on('mouseleave', 'КАТ01', function () {
-            map.getCanvas().style.cursor = '';
-            // popup1.remove();
-        });
+  <script>
+    const apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijg4OTEzNGE2M2UzMzRjY2ZhNWE4MmM3Y2ZhN2UwOGViIiwiaCI6Im11cm11cjY0In0=';
 
-        map.on('click', 'КАТ01', function (e) {
-            var coordinates = e.features[0].geometry.coordinates.slice();
+    function getWaypointsFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      const wpParam = params.get('wp');
+      if (!wpParam) return null;
 
-            
+      return wpParam.split('|').map(coord => {
+        const [lat, lng] = coord.split(',').map(Number);
+        return L.latLng(lat, lng);
+      });
+    }
 
-        // Ensure that if the map is zoomed out such that multiple
-        // copies of the feature are visible, the popup appears
-        // over the copy being pointed to.
-        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-        }
-            var strpokojnici = e.features[0].properties.Text   
-            if  (!(e.features[0].properties.Text1 == ""))
-            {
-                strpokojnici = strpokojnici  + "#" + e.features[0].properties.Text1
-            }  
-         if  (!(e.features[0].properties.Text2 == ""))
-            {
-                strpokojnici = strpokojnici  + "#" + e.features[0].properties.Text2
-              }  
-            var sVar2 = strpokojnici.split('#')
-                     if  (!(e.features[0].properties.Text3 == ""))
-            {
-                 sVar1 = e.features[0].properties.Text3.split('#');
-              } 
-          
-          //   popup1.remove();
-                  document.getElementById('info').innerHTML =
-                // e.point is the x, y coordinates of the mousemove event relative
-                // to the top-left corner of the map
-               // JSON.stringify(e.point) +
-               "Zakupac:" + convertLetters(sVar1[0]) + "\n"
-                + "Plaćeno do:" + convertLetters(sVar1[1]) + "\n" + "Parcela/Red/Broj:" + convertLetters(sVar1[3]) + '/' + convertLetters(sVar1[2]) + '/' + convertLetters(sVar1[4] + "\n" + "Veličina:" + convertLetters(sVar1[5]) +  "\n" +
-                    JSON.stringify(e.lngLat.wrap())); 
-      // var popup= new maptilersdk.Popup()
-            //    marker.setLngLat(([coordinates[0][0][0], coordinates[0][0][1]]);
+    const map = L.map('map').setView([44.8, 20.5], 8);
 
-                        var jug = 0
-            if (coordinates[0][1][1] < coordinates[0][jug][1]) 
-               {
-                jug = 1
-            }
-            if (coordinates[0][2][1] < coordinates[0][jug][1]) 
-               {
-                jug = 2
-            }
-      if (coordinates[0][3][1] < coordinates[0][jug][1]) 
-               {
-                jug = 3
-            }
-             if (coordinates[0][4][1] < coordinates[0][jug][1]) 
-               {
-                jug = 4
-                }
-                        var sever = 0
-             
-            if (coordinates[0][1][1] > coordinates[0][sever][1]) 
-               {
-                sever = 1
-            }
-            if (coordinates[0][2][1] > coordinates[0][sever][1]) 
-               {
-                sever = 2
-            }
-      if (coordinates[0][3][1] > coordinates[0][sever][1]) 
-               {
-                sever = 3
-            }
-             if (coordinates[0][4][1] > coordinates[0][sever][1]) 
-               {
-                sever = 4
-                }
-           marker.setLngLat(  [(coordinates[0][jug][0]+ coordinates[0][sever][0] )/2 , (coordinates[0][jug][1]+ coordinates[0][sever][1] )/2        ]);
-            marker.addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-            popup1.setLngLat([coordinates[0][sever][0], coordinates[0][sever][1]]);
-           
-                        if (sVar2.length == 2) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar2[0]) + '</p><p class="big">' + convertLetters(sVar2[1]) + '</p>')
-            }
-            else if (sVar2.length == 3) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar2[0]) + '</p><p class="big">' + convertLetters(sVar2[1]) + '</p><p class="big">' + convertLetters(sVar2[2]) + '</p>')
-            }
-            else if (sVar2.length == 4) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar2[0]) + '</p><p class="big">' + convertLetters(sVar2[1]) + '</p><p class="big">' + convertLetters(sVar2[2]) + '</p><p class="big">' + convertLetters(sVar2[3]) + '</p>')
-            }
-            else if (sVar2.length == 5) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar2[0]) + '</p><p class="big">' + convertLetters(sVar2[1]) + '</p><p class="big">' + convertLetters(sVar2[2]) + '</p><p class="big">' + convertLetters(sVar2[3]) + '</p><p class="big">' + convertLetters(sVar2[4]) + '</p>')
-            }
-            else if (sVar2.length == 6) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 2.1; line-width: 6.1;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar2[0]) + '</p><p class="big">' + convertLetters(sVar2[1]) + '</p><p class="big">' + convertLetters(sVar2[2]) + '</p><p class="big">' + convertLetters(sVar2[3]) + '</p><p class="big">' + convertLetters(sVar2[4]) + '</p><p class="big">' + convertLetters(sVar2[5]) + '</p>')
-            }
-            else if (sVar2.length == 7) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar2[0]) + '</p><p class="small">' + convertLetters(sVar2[1]) + '</p><p class="small">' + convertLetters(sVar2[2]) + '</p><p class="small">' + convertLetters(sVar2[3]) + '</p><p class="small">' + convertLetters(sVar2[4]) + '</p><p class="small">' + convertLetters(sVar2[5]) + '</p><p class="small">' + convertLetters(sVar2[6]) + '</p>')
-            }
-            else if (sVar2.length == 8) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar2[0]) + '</p><p class="small">' + convertLetters(sVar2[1]) + '</p><p class="small">' + convertLetters(sVar2[2]) + '</p><p class="small">' + convertLetters(sVar2[3]) + '</p><p class="small">' + convertLetters(sVar2[4]) + '</p><p class="small">' + convertLetters(sVar2[5]) + '</p><p class="small">' + convertLetters(sVar2[6]) + '</p><p class="small">' + convertLetters(sVar2[7]) + '</p>')
-            }
-            else if (sVar2.length == 9) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar2[0]) + '</p><p class="small">' + convertLetters(sVar2[1]) + '</p><p class="small">' + convertLetters(sVar2[2]) + '</p><p class="small">' + convertLetters(sVar2[3]) + '</p><p class="small">' + convertLetters(sVar2[4]) + '</p><p class="small">' + convertLetters(sVar2[5]) + '</p><p class="small">' + convertLetters(sVar2[6]) + '</p><p class="small">' + convertLetters(sVar2[7]) + '</p><p class="small">' + convertLetters(sVar2[8]) + '</p>')
-            }
-            else if (sVar2.length == 10) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar2[0]) + '</p><p class="small">' + convertLetters(sVar2[1]) + '</p><p class="small">' + convertLetters(sVar2[2]) + '</p><p class="small">' + convertLetters(sVar2[3]) + '</p><p class="small">' + convertLetters(sVar2[4]) + '</p><p class="small">' + convertLetters(sVar2[5]) + '</p><p class="small">' + convertLetters(sVar2[6]) + '</p><p class="small">' + convertLetters(sVar2[7]) + '</p><p class="small">' + convertLetters(sVar2[8]) + '</p><p class="small">' + convertLetters(sVar2[9]) + '</p>')
-            }
-            else if (sVar2.length == 11) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar2[0]) + '</p><p class="small">' + convertLetters(sVar2[1]) + '</p><p class="small">' + convertLetters(sVar2[2]) + '</p><p class="small">' + convertLetters(sVar2[3]) + '</p><p class="small">' + convertLetters(sVar2[4]) + '</p><p class="small">' + convertLetters(sVar2[5]) + '</p><p class="small">' + convertLetters(sVar2[6]) + '</p><p class="small">' + convertLetters(sVar2[7]) + '</p><p class="small">' + convertLetters(sVar2[8]) + '</p><p class="small">' + convertLetters(sVar2[9]) + '</p><p class="small">' + convertLetters(sVar2[10]) + '</p>')
-            }
-            else if (sVar2.length == 12) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar2[0]) + '</p><p class="small">' + convertLetters(sVar2[1]) + '</p><p class="small">' + convertLetters(sVar2[2]) + '</p><p class="small">' + convertLetters(sVar2[3]) + '</p><p class="small">' + convertLetters(sVar2[4]) + '</p><p class="small">' + convertLetters(sVar2[5]) + '</p><p class="small">' + convertLetters(sVar2[6]) + '</p><p class="small">' + convertLetters(sVar2[7]) + '</p><p class="small">' + convertLetters(sVar2[8]) + '</p><p class="small">' + convertLetters(sVar2[9]) + '</p><p class="small">' + convertLetters(sVar2[10]) + '</p><p class="small">' + convertLetters(sVar2[11]) + '</p>')
-            }
-            else if (sVar2.length == 1) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar2[0]) + '</p>')
-            }
-            else {
-                intZoom = 18
-                sPAramX = sPAramX  
-                sPAramY=sPAramY+0.0005
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar2[0]) + '</p><p class="small">' + convertLetters(sVar2[1]) + '</p><p class="small">' + convertLetters(sVar2[2]) + '</p><p class="small">' + convertLetters(sVar2[3]) + '</p><p class="small">' + convertLetters(sVar2[4]) + '</p><p class="small">' + convertLetters(sVar2[5]) + '</p><p class="small">' + convertLetters(sVar2[6]) + '</p><p class="small">' + convertLetters(sVar2[7]) + '</p><p class="small">' + convertLetters(sVar2[8]) + '</p><p class="small">' + convertLetters(sVar2[9]) + '</p><p class="small">' + convertLetters(sVar2[10]) + '</p><p class="small">' + convertLetters(sVar2[11]) + '</p><p class="small">' + convertLetters(sVar2[12]) + '</p><p class="small">' + convertLetters(sVar2[13]) + '</p><p class="small">' + convertLetters(sVar2[14]) + '</p><p class="small">' + convertLetters(sVar2[15]) + '</p><p class="small">' + convertLetters(sVar2[16]) + '</p><p class="small">' + convertLetters(sVar2[17]) + '</p><p class="small">' + convertLetters(sVar2[18]) + '</p><p class="small">' + convertLetters(sVar2[19]) + '</p><p class="small">' + convertLetters(sVar2[20]) + '</p><p class="small">' + convertLetters(sVar2[21]) + '</p><p class="small">' + convertLetters(sVar2[22]) + '</p><p class="small">' + convertLetters(sVar2[23]) + '</p>')
-            }
-       // .setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Zakupac:</h3><p class="big">' + convertLetters(sVar1[0]) + '</p><h3>Plaćeno do:</h3><p class="big">' + convertLetters(sVar1[1]) + '</p><h3>Parcela/Red/Broj:</h3><p class="big">' + convertLetters(sVar1[3]) + '/' + convertLetters(sVar1[2]) + '/' + convertLetters(sVar1[4]) + '</p>')
-            popup1.addTo(map);
+    const waypoints = getWaypointsFromURL() || [
+      L.latLng(44.7866, 20.4489), // Beograd
+      L.latLng(44.8708, 20.6410), // Pančevo
+      L.latLng(45.1162, 21.3039), // Vršac
+      L.latLng(45.2671, 19.8335)  // Novi Sad
+    ];
 
-                        map.flyTo({
-                center: [
-                    coordinates[0][sever][0], coordinates[0][sever][1] +0.0001
-                ],
-                zoom: 20,
-                essential: false // this animation is considered essential with respect to prefers-reduced-motion
-            });
-
-
-
-        });
-
-        map.on('load', async function () {
-
-
-
-
-
-
-
-
-
-
-            
-         //   const geojson = await maptilersdk.data.get('eb403a0c-8a1f-4f14-81a8-eef2988d1971');
-             const geolocationIP = await maptilersdk.geolocation.info();
-      const {country_languages} = geolocationIP;
-      map.setLanguage(`name:${country_languages[0]}`);
-            const geojson = await maptilersdk.data.get('11798dab-068d-4d6c-a185-076a13b059eb');
-           //   const geojson = await maptilersdk.data.get('6b1ef158-f36b-413b-b731-bfa47584de35'); 
-             const geojson1 = await maptilersdk.data.get('6a993390-8a9e-42db-8907-859b0d01a38d');
-           // const geojson2 = await maptilersdk.data.get('bc39fb99-ae7a-4b20-b1f6-e38bd0d7c961');
-            //const geojson3 = await maptilersdk.data.get('fac68064-94ff-4fba-af09-00e08b9a814d');
-            //const geojson4 = await maptilersdk.data.get('bc8f8334-0f7d-4c12-b30f-d85216d16848');
-
-
-            
-            map.addSource('КАТ01', {
-                type: 'geojson',
-                data: geojson
-            }
-            ); 
-            map.addLayer({
-                'id': 'КАТ01',
-                'type': 'fill',
-                'source': 'КАТ01',
-                'layout': {},
-                'paint': {
-                    'fill-color': '#07098b',
-                    'fill-opacity': 0.3,
-                    'fill-outline-color': '#000000' 
-                }
-            });
-                        map.addSource('КАТ02', {
-                type: 'geojson',
-                data: geojson1
-            }
-            );
-                                  map.addLayer({
-                'id': 'КАТ02',
-                'type': 'fill',
-                'source': 'КАТ02',
-                'layout': {},
-                'paint': {
-                    'fill-color': '#FFFFFF',
-                    'fill-opacity': 0.8,
-                    'fill-outline-color': '#000000' 
-                }
-                                  });
-
-            //                        map.addSource('КАТ03', {
-            //    type: 'geojson',
-            //    data: geojson2
-            //}
-            //);
-
-            //                                  map.addLayer({
-            //    'id': 'КАТ03',
-            //    'type': 'fill',
-            //    'source': 'КАТ03',
-            //    'layout': {},
-            //    'paint': {
-            //        'fill-color': '#07098b',
-            //        'fill-opacity': 0.3,
-            //        'fill-outline-color': '#000000' 
-            //    }
-            //                      });
-            
-            //                                    map.addSource('КАТ04', {
-            //    type: 'geojson',
-            //    data: geojson3
-            //}
-            //);
-            //                                              map.addLayer({
-            //    'id': 'КАТ04',
-            //    'type': 'fill',
-            //    'source': 'КАТ04',
-            //    'layout': {},
-            //    'paint': {
-            //        'fill-color': '#07098b',
-            //        'fill-opacity': 0.3,
-            //        'fill-outline-color': '#000000' 
-            //    }
-            //                                              });
-
-            //                                                map.addSource('КАТ05', {
-            //    type: 'geojson',
-            //    data: geojson4
-            //}
-            //);
-            //                                                          map.addLayer({
-            //    'id': 'КАТ05',
-            //    'type': 'fill',
-            //    'source': 'КАТ05',
-            //    'layout': {},
-            //    'paint': {
-            //        'fill-color': '#07098b',
-            //        'fill-opacity': 0.3,
-            //        'fill-outline-color': '#000000' 
-            //    }
-            //});
-                marker.setLngLat([sPAramX, sPAramY])
-                marker.addTo(map);
-             
-         //  var   popup1 = new maptilersdk.Popup({ closeOnClick: false })
-               popup1 .setLngLat([sPAramX, sPAramY + 0.000065])
-            //   let doc = document.implementation.createHTMLDocument("New Document");
-            // const para = document.createElement("p");
-            // para.innerText = "This is a paragraph";
-            //document.body.appendChild(para);
-            // var xx='<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><p class="small">MARKOVIĆ DEJAN 1972- 1999.</p><p class="small">MARKOVIĆ DEJAN 1972- 1999</p>'
-            if (sVar.length == 2) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar[0]) + '</p><p class="big">' + convertLetters(sVar[1]) + '</p>')
-            }
-            else if (sVar.length == 3) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar[0]) + '</p><p class="big">' + convertLetters(sVar[1]) + '</p><p class="big">' + convertLetters(sVar[2]) + '</p>')
-            }
-            else if (sVar.length == 4) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar[0]) + '</p><p class="big">' + convertLetters(sVar[1]) + '</p><p class="big">' + convertLetters(sVar[2]) + '</p><p class="big">' + convertLetters(sVar[3]) + '</p>')
-            }
-            else if (sVar.length == 5) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar[0]) + '</p><p class="big">' + convertLetters(sVar[1]) + '</p><p class="big">' + convertLetters(sVar[2]) + '</p><p class="big">' + convertLetters(sVar[3]) + '</p><p class="big">' + convertLetters(sVar[4]) + '</p>')
-            }
-            else if (sVar.length == 6) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 2.1; line-width: 6.1;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar[0]) + '</p><p class="big">' + convertLetters(sVar[1]) + '</p><p class="big">' + convertLetters(sVar[2]) + '</p><p class="big">' + convertLetters(sVar[3]) + '</p><p class="big">' + convertLetters(sVar[4]) + '</p><p class="big">' + convertLetters(sVar[5]) + '</p>')
-            }
-            else if (sVar.length == 7) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar[0]) + '</p><p class="small">' + convertLetters(sVar[1]) + '</p><p class="small">' + convertLetters(sVar[2]) + '</p><p class="small">' + convertLetters(sVar[3]) + '</p><p class="small">' + convertLetters(sVar[4]) + '</p><p class="small">' + convertLetters(sVar[5]) + '</p><p class="small">' + convertLetters(sVar[6]) + '</p>')
-            }
-            else if (sVar.length == 8) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar[0]) + '</p><p class="small">' + convertLetters(sVar[1]) + '</p><p class="small">' + convertLetters(sVar[2]) + '</p><p class="small">' + convertLetters(sVar[3]) + '</p><p class="small">' + convertLetters(sVar[4]) + '</p><p class="small">' + convertLetters(sVar[5]) + '</p><p class="small">' + convertLetters(sVar[6]) + '</p><p class="small">' + convertLetters(sVar[7]) + '</p>')
-            }
-            else if (sVar.length == 9) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar[0]) + '</p><p class="small">' + convertLetters(sVar[1]) + '</p><p class="small">' + convertLetters(sVar[2]) + '</p><p class="small">' + convertLetters(sVar[3]) + '</p><p class="small">' + convertLetters(sVar[4]) + '</p><p class="small">' + convertLetters(sVar[5]) + '</p><p class="small">' + convertLetters(sVar[6]) + '</p><p class="small">' + convertLetters(sVar[7]) + '</p><p class="small">' + convertLetters(sVar[8]) + '</p>')
-            }
-            else if (sVar.length == 10) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar[0]) + '</p><p class="small">' + convertLetters(sVar[1]) + '</p><p class="small">' + convertLetters(sVar[2]) + '</p><p class="small">' + convertLetters(sVar[3]) + '</p><p class="small">' + convertLetters(sVar[4]) + '</p><p class="small">' + convertLetters(sVar[5]) + '</p><p class="small">' + convertLetters(sVar[6]) + '</p><p class="small">' + convertLetters(sVar[7]) + '</p><p class="small">' + convertLetters(sVar[8]) + '</p><p class="small">' + convertLetters(sVar[9]) + '</p>')
-            }
-            else if (sVar.length == 11) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar[0]) + '</p><p class="small">' + convertLetters(sVar[1]) + '</p><p class="small">' + convertLetters(sVar[2]) + '</p><p class="small">' + convertLetters(sVar[3]) + '</p><p class="small">' + convertLetters(sVar[4]) + '</p><p class="small">' + convertLetters(sVar[5]) + '</p><p class="small">' + convertLetters(sVar[6]) + '</p><p class="small">' + convertLetters(sVar[7]) + '</p><p class="small">' + convertLetters(sVar[8]) + '</p><p class="small">' + convertLetters(sVar[9]) + '</p><p class="small">' + convertLetters(sVar[10]) + '</p>')
-            }
-            else if (sVar.length == 12) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar[0]) + '</p><p class="small">' + convertLetters(sVar[1]) + '</p><p class="small">' + convertLetters(sVar[2]) + '</p><p class="small">' + convertLetters(sVar[3]) + '</p><p class="small">' + convertLetters(sVar[4]) + '</p><p class="small">' + convertLetters(sVar[5]) + '</p><p class="small">' + convertLetters(sVar[6]) + '</p><p class="small">' + convertLetters(sVar[7]) + '</p><p class="small">' + convertLetters(sVar[8]) + '</p><p class="small">' + convertLetters(sVar[9]) + '</p><p class="small">' + convertLetters(sVar[10]) + '</p><p class="small">' + convertLetters(sVar[11]) + '</p>')
-            }
-            else if (sVar.length == 1) {
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="big">' + convertLetters(sVar[0]) + '</p>')
-            }
-            else {
-                intZoom = 18
-                sPAramX = sPAramX  
-                sPAramY=sPAramY+0.0005
-                popup1.setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Pokojnici:</h3><p class="small">' + convertLetters(sVar[0]) + '</p><p class="small">' + convertLetters(sVar[1]) + '</p><p class="small">' + convertLetters(sVar[2]) + '</p><p class="small">' + convertLetters(sVar[3]) + '</p><p class="small">' + convertLetters(sVar[4]) + '</p><p class="small">' + convertLetters(sVar[5]) + '</p><p class="small">' + convertLetters(sVar[6]) + '</p><p class="small">' + convertLetters(sVar[7]) + '</p><p class="small">' + convertLetters(sVar[8]) + '</p><p class="small">' + convertLetters(sVar[9]) + '</p><p class="small">' + convertLetters(sVar[10]) + '</p><p class="small">' + convertLetters(sVar[11]) + '</p><p class="small">' + convertLetters(sVar[12]) + '</p><p class="small">' + convertLetters(sVar[13]) + '</p><p class="small">' + convertLetters(sVar[14]) + '</p><p class="small">' + convertLetters(sVar[15]) + '</p><p class="small">' + convertLetters(sVar[16]) + '</p><p class="small">' + convertLetters(sVar[17]) + '</p><p class="small">' + convertLetters(sVar[18]) + '</p><p class="small">' + convertLetters(sVar[19]) + '</p><p class="small">' + convertLetters(sVar[20]) + '</p><p class="small">' + convertLetters(sVar[21]) + '</p><p class="small">' + convertLetters(sVar[22]) + '</p><p class="small">' + convertLetters(sVar[23]) + '</p>')
-            }
-            popup1.setMaxWidth("500px")
-            popup1.addTo(map);
-            //var popup = new maptilersdk.Popup({ closeOnClick: false })
-            //    .setLngLat([sPAramX - 0.00075, sPAramY])
-            //    .setMaxWidth("500px")
-            //    .setHTML('<style> p.small {  line-height: 0.4;} p.big {  line-height: 1.8;}</style><h3>Zakupac:</h3><p class="big">' + convertLetters(sVar1[0]) + '</p><h3>Plaćeno do:</h3><p class="big">' + convertLetters(sVar1[1]) + '</p><h3>Parcela/Red/Broj:</h3><p class="big">' + convertLetters(sVar1[3]) + '/' + convertLetters(sVar1[2]) + '/' + convertLetters(sVar1[4]) + '</p>')
-            //    .addTo(map);
-
-
-
-            map.flyTo({
-                center: [
-                    sPAramX,
-                    sPAramY
-                ],
-                zoom: intZoom,
-                essential: false // this animation is considered essential with respect to prefers-reduced-motion
-            });
-            //
-            //
-            //
-     //       map.loadImage(
-     //                 'https://fastly.picsum.photos/id/866/200/300.jpg?hmac=rcadCENKh4rD6MAp6V_ma-AyWv641M4iiOpe1RyFHeI',
-     ////   'https://upload.wikimedia.org/wikipedia/commons/7/7c/201408_cat.png',
-     //   function (error, image) {
-     //     if (error) throw error;
-     //     map.addImage('cat', image);
-     //     map.addSource('point', {
-     //       'type': 'geojson',
-     //       'data': {
-     //         'type': 'FeatureCollection',
-     //         'features': [
-     //           {
-     //             'type': 'Feature',
-     //             'geometry': {
-     //               'type': 'Point',
-     //               'coordinates': [ sPAramX-0.001, sPAramY]
-     //             }
-     //           }
-     //         ]
-     //       }
-     //     });
-     //     map.addLayer({
-     //       'id': 'points',
-     //       'type': 'symbol',
-     //       'source': 'point',
-     //       'layout': {
-     //         'icon-image': 'cat',
-     //         'icon-size': 1.00
-     //       }
-     //     });
-      //              }
-      //);
-
-
-
-
-            //
-            //
-            //
-            //
-
-
-
-
-        });
-    </script>
+    L.Routing.control({
+      waypoints: waypoints,
+      router: L.Routing.openrouteservice(apiKey),
+      lineOptions: {
+        styles: [{ color: 'blue', opacity: 0.7, weight: 5 }]
+      },
+      createMarker: function(i, wp) {
+        return L.marker(wp.latLng).bindPopup(`Tačka ${i + 1}`);
+      }
+    }).addTo(map);
+  </script>
 </body>
 </html>
