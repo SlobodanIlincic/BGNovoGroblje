@@ -106,6 +106,37 @@
         }).addTo(map);
       }
     });
+
+    // Ikonica za orijentir
+const ikonaOrijentir1 = L.icon({
+  iconUrl: 'img/orijentir.png', // zameni sa svojom ikonom
+  iconSize: [28, 28],
+  iconAnchor: [14, 28],
+  popupAnchor: [0, -28]
+});
+
+// Lista fiksnih orijentira
+const orijentiri = [
+  {
+    naziv: "Kapela",
+    koordinate: [44.8085, 20.4887]
+  },
+  {
+    naziv: "Česma",
+    koordinate: [44.8079, 20.4899]
+  },
+  {
+    naziv: "Spomenik",
+    koordinate: [44.8072, 20.4911]
+  }
+];
+
+// Dodaj ih na mapu
+orijentiri.forEach(o => {
+  L.marker(o.koordinate, { icon: ikonaOrijentir1 })
+    .addTo(map)
+    .bindPopup(o.naziv);
+});
   </script>
 </body>
 </html>
