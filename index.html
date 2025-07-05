@@ -83,19 +83,30 @@ async function snapToRoad(lat, lng) {
   }
 }
 
-async function getSnappedWaypoints() {
+ async function getSnappedWaypoints() {
   const raw = getWaypointsFromURL();
-  if (!raw) return null;
+  if (!raw || raw.length < 2) return null;
+
   const snapped = [];
-  for (const wp of raw) {
+  const ulazGroblja = L.latLng(44.80986502189342, 20.486450605073355);
+
+  for (let i = 0; i < raw.length; i++) {
+    const wp = raw[i];
     try {
-      const s = await snapToRoad(wp.lat, wp.lng);
-      snapped.push(s);
+      if (i === raw.length - 1) {
+        // Poslednja tačka je grobno mesto — prikaži kao marker
+        L.marker(wp).addTo(map).bindPopup("Grobno mesto");
+        snapped.push(ulazGroblja); // ruta ide do ulaza
+      } else {
+        const s = await snapToRoad(wp.lat, wp.lng);
+        snapped.push(s);
+      }
     } catch (e) {
       console.warn("Greška pri snapovanju:", e);
-      snapped.push(wp); // fallback na originalnu tačku
+      snapped.push(wp);
     }
   }
+
   return snapped;
 }
 
