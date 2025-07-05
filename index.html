@@ -9,6 +9,17 @@
     html, body { margin: 0; padding: 0; height: 100%; }
     #map { width: 100%; height: 100vh; }
   </style>
+  <style>
+  .orijentir-label {
+    background: white;
+    color: black;
+    font-weight: bold;
+    border: 1px solid #ccc;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+</style>
 </head>
 <body>
   <div id="map"></div>
@@ -131,11 +142,17 @@ const orijentiri = [
   }
 ];
 
-// Dodaj ih na mapu
+// Dodaj ih na mapu sa tooltipom
 orijentiri.forEach(o => {
   L.marker(o.koordinate, { icon: ikonaOrijentir1 })
     .addTo(map)
-    .bindPopup(o.naziv);
+    .bindPopup(o.naziv)
+    .bindTooltip(o.naziv, {
+      permanent: true,
+      direction: "top",
+      offset: [0, -10],
+      className: "orijentir-label"
+    });
 });
   </script>
 </body>
