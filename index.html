@@ -78,13 +78,32 @@
     const sveTacke = [...tacke]; // za povezivanje linijom
 
     // Prikaz tačaka iz URL-a
-    tacke.forEach((latlng, i) => {
-      let ikona = ikonaOrijentir;
-      if (i === 0) ikona = ikonaUlaz;
-      else if (i === tacke.length - 1) ikona = ikonaGrob;
+tacke.forEach((latlng, i) => {
+  let ikona = ikonaOrijentir;
+  let marker = null;
 
-      L.marker(latlng, { icon: ikona }).addTo(map).bindPopup(`Tačka ${i + 1}`);
-    });
+  if (i === 0) {
+    ikona = ikonaUlaz;
+    marker = L.marker(latlng, { icon: ikona })
+      .addTo(map)
+      .bindPopup("Ulaz");
+  } else if (i === tacke.length - 1) {
+    ikona = ikonaGrob;
+    marker = L.marker(latlng, { icon: ikona })
+      .addTo(map)
+      .bindPopup("Grob")
+      .bindTooltip("Grob", {
+        permanent: true,
+        direction: "top",
+        offset: [0, -10],
+        className: "orijentir-label"
+      });
+  } else {
+    marker = L.marker(latlng, { icon: ikona })
+      .addTo(map)
+      .bindPopup(`Tačka ${i + 1}`);
+  }
+});
 
     if (tacke.length > 1) {
       L.polyline(tacke, {
