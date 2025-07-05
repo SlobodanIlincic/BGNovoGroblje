@@ -71,34 +71,63 @@ const baseLayers = {
 
 L.control.layers(baseLayers).addTo(map);
 
+async function snapToRoad(lat, lng) {
+  const url = `https://router.project-osrm.org/nearest/v1/driving/${lng},${lat}`;
+  const response = await fetch(url);
+  const data = await response.json();
+  if (data.code === "Ok" && data.waypoints.length > 0) {
+    const snapped = data.waypoints[0].location;
+    return L.latLng(snapped[1], snapped[0]);
+  } else {
+    throw new Error("Nije moguće snapovati tačku");
+  }
+}
+
+async function getSnappedWaypoints() {
+  const raw = getWaypointsFromURL();
+  if (!raw) return null;
+  const snapped = [];
+  for (const wp of raw) {
+    try {
+      const s = await snapToRoad(wp.lat, wp.lng);
+      snapped.push(s);
+    } catch (e) {
+      console.warn("Greška pri snapovanju:", e);
+      snapped.push(wp); // fallback na originalnu tačku
+    }
+  }
+  return snapped;
+}
+
+(async () => {
+  const waypoints = await getSnappedWaypoints() || [
+    L.latLng(44.7866, 20.4489),
+    L.latLng(44.8708, 20.6410),
+    L.latLng(45.1162, 21.3039),
+    L.latLng(45.2671, 19.8335)
+  ];
+
+  const control = L.Routing.control({
+    waypoints: waypoints,
+    router: L.Routing.osrmv1({
+      serviceUrl: 'https://router.project-osrm.org/route/v1',
+      useHints: false
+    }),
+    lineOptions: {
+      styles: [{ color: 'blue', opacity: 0.7, weight: 5 }]
+    },
+    createMarker: function(i, wp) {
+      return L.marker(wp.latLng).bindPopup(`Tačka ${i + 1}`);
+    }
+  }).addTo(map);
+
+  control.on('routingerror', function(e) {
+    document.getElementById('error').style.display = 'block';
+    console.error('Greška pri rutiranju:', e.error);
+  });
+})();
 
 
-
-
-    const waypoints = getWaypointsFromURL() || [
-      L.latLng(44.7866, 20.4489), // Beograd
-      L.latLng(44.8708, 20.6410), // Pančevo
-      L.latLng(45.1162, 21.3039), // Vršac
-      L.latLng(45.2671, 19.8335)  // Novi Sad
-    ];
-
-    const control = L.Routing.control({
-      waypoints: waypoints,
-      router: L.Routing.osrmv1({
-        serviceUrl: 'https://router.project-osrm.org/route/v1'
-      }),
-      lineOptions: {
-        styles: [{ color: 'blue', opacity: 0.7, weight: 5 }]
-      },
-      createMarker: function(i, wp) {
-        return L.marker(wp.latLng).bindPopup(`Tačka ${i + 1}`);
-      }
-    }).addTo(map);
-
-    control.on('routingerror', function(e) {
-      document.getElementById('error').style.display = 'block';
-      console.error('Greška pri rutiranju:', e.error);
-    });
   </script>
 </body>
-</html>
+</html>>
