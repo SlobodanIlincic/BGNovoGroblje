@@ -71,74 +71,44 @@ const baseLayers = {
 
 L.control.layers(baseLayers).addTo(map);
 
-async function snapToRoad(lat, lng) {
-  const url = `https://router.project-osrm.org/nearest/v1/driving/${lng},${lat}`;
-  const response = await fetch(url);
-  const data = await response.json();
-  if (data.code === "Ok" && data.waypoints.length > 0) {
-    const snapped = data.waypoints[0].location;
-    return L.latLng(snapped[1], snapped[0]);
-  } else {
-    throw new Error("Nije moguće snapovati tačku");
+function getWaypointsFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const wpParam = params.get('wp');
+  if (!wpParam) return null;
+
+  try {
+    return wpParam.split('|').map(coord => {
+      const [lat, lng] = coord.split(',').map(Number);
+      if (isNaN(lat) || isNaN(lng)) throw new Error("Neispravne koordinate");
+      return L.latLng(lat, lng);
+    });
+  } catch (e) {
+    console.error("Greška pri parsiranju koordinata:", e);
+    return null;
   }
 }
 
- async function getSnappedWaypoints() {
-  const raw = getWaypointsFromURL();
-  if (!raw || raw.length < 2) return null;
+const tacke = getWaypointsFromURL();
+if (tacke && tacke.length > 1) {
+  // Dodaj markere
+  tacke.forEach((latlng, i) => {
+    L.marker(latlng).addTo(map).bindPopup(`Tačka ${i + 1}`);
+  });
 
-  const snapped = [];
-  const ulazGroblja = L.latLng(44.80986502189342, 20.486450605073355);
-
-  for (let i = 0; i < raw.length; i++) {
-    const wp = raw[i];
-    try {
-      if (i === raw.length - 1) {
-        // Poslednja tačka je grobno mesto — prikaži kao marker
-        L.marker(wp).addTo(map).bindPopup("Grobno mesto");
-        snapped.push(ulazGroblja); // ruta ide do ulaza
-      } else {
-        const s = await snapToRoad(wp.lat, wp.lng);
-        snapped.push(s);
-      }
-    } catch (e) {
-      console.warn("Greška pri snapovanju:", e);
-      snapped.push(wp);
-    }
-  }
-
-  return snapped;
-}
-
-(async () => {
-  const waypoints = await getSnappedWaypoints() || [
-    L.latLng(44.7866, 20.4489),
-    L.latLng(44.8708, 20.6410),
-    L.latLng(45.1162, 21.3039),
-    L.latLng(45.2671, 19.8335)
-  ];
-
-  const control = L.Routing.control({
-    waypoints: waypoints,
-    router: L.Routing.osrmv1({
-      serviceUrl: 'https://router.project-osrm.org/route/v1',
-      useHints: false
-    }),
-    lineOptions: {
-      styles: [{ color: 'blue', opacity: 0.7, weight: 5 }]
-    },
-    createMarker: function(i, wp) {
-      return L.marker(wp.latLng).bindPopup(`Tačka ${i + 1}`);
-    }
+  // Poveži linijom
+  L.polyline(tacke, {
+    color: 'gray',
+    weight: 3,
+    dashArray: '5, 5',
+    opacity: 0.8
   }).addTo(map);
 
-  control.on('routingerror', function(e) {
-    document.getElementById('error').style.display = 'block';
-    console.error('Greška pri rutiranju:', e.error);
-  });
-})();
+  // Zumiraj da obuhvati sve tačke
+  const bounds = L.latLngBounds(tacke);
+  map.fitBounds(bounds, { padding: [50, 50] });
+}
 
 
   </script>
 </body>
-</html>>
+</html>>>
