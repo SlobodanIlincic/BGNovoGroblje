@@ -194,7 +194,23 @@ function pointInPolygon(point, vs) {
 
       nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje);
     }
+function najblizaUdaljenostDoPoligona(tacka, poligon) {
+  const latlngs = poligon.getLatLngs()[0];
+  let minDist = Infinity;
 
+  for (let i = 0; i < latlngs.length - 1; i++) {
+    const segA = latlngs[i];
+    const segB = latlngs[i + 1];
+    const dist = L.LineUtil.pointToSegmentDistance(
+      L.point(map.latLngToLayerPoint(tacka)),
+      L.point(map.latLngToLayerPoint(segA)),
+      L.point(map.latLngToLayerPoint(segB))
+    );
+    if (dist < minDist) minDist = dist;
+  }
+
+  return minDist;
+}
  function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
   const navDiv = document.getElementById('navigacija');
   if (!navDiv) return;
@@ -250,8 +266,8 @@ function pointInPolygon(point, vs) {
 
     const polygon = L.polygon(parcela.koordinate);
     const blizu = tacke.some(t => {
-      const najbliza = L.GeometryUtil.closest(map, polygon.getLatLngs()[0], t);
-      const dist = map.distance(t, najbliza);
+
+      const dist = najblizaUdaljenostDoPoligona(t, polygon);
       return dist < 10; // prag u metrima
     });
 
