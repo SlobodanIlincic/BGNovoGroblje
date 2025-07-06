@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Vizuelna ruta sa animacijom</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet-geometryutil"></script>
   <style>
     .rotatable {
   transform-origin: center center;
@@ -182,7 +183,7 @@ function pointInPolygon(point, vs) {
       nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje);
     }
 
-function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
+ function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
   const navDiv = document.getElementById('navigacija');
   if (!navDiv) return;
 
@@ -214,18 +215,38 @@ function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
     map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
   }
 
-  // Pronađi usputne parcele
-const usputneParcele = new Set();
-tacke.forEach(koord => {
-  sveParcele.forEach(parcela => {
-    if (!trazene.includes(parcela.id)) {
-      if (pointInPolygon(koord, parcela.koordinate)) {
-        usputneParcele.add(parcela.naziv || parcela.id);
+  // Pronađi usputne parcele (koje nisu u URL-u)
+  const usputneParcele = new Set();
+  tacke.forEach(koord => {
+    sveParcele.forEach(parcela => {
+      if (!trazene.includes(parcela.id)) {
+        const polygon = L.polygon(parcela.koordinate);
+        const najbliza = L.GeometryUtil.closest(map, polygon, koord);
+        const dist = map.distance(koord, najbliza);
+        if (dist < 100) {
+          usputneParcele.add(parcela.naziv || parcela.id);
+        }
       }
+    });
+  });
+
+  // Pronađi prosleđene parcele redosledom kojim su "obiđene"
+  const prosledjeneParcelePoRedosledu = [];
+  trazene.forEach(id => {
+    const parcela = sveParcele.find(p => p.id === id);
+    if (!parcela) return;
+
+    const polygon = L.polygon(parcela.koordinate);
+    const blizu = tacke.some(t => {
+      const najbliza = L.GeometryUtil.closest(map, polygon, t);
+      const dist = map.distance(t, najbliza);
+      return dist < 10; // prag u metrima
+    });
+
+    if (blizu) {
+      prosledjeneParcelePoRedosledu.push(parcela.naziv || parcela.id);
     }
   });
-});
-
 
   // Prikaz tekstualnog vođenja
   navDiv.innerHTML = `
@@ -236,7 +257,9 @@ tacke.forEach(koord => {
     ${usputneParcele.size > 0
       ? `➤ Pored parcela: ${[...usputneParcele].join(', ')}<br>`
       : ''}
-    ➤ Parcela: ${nazivParcele}
+    ${prosledjeneParcelePoRedosledu.length > 0
+      ? `➤ Parcela: ${prosledjeneParcelePoRedosledu.join(' → ')}`
+      : `➤ Parcela: ${nazivParcele}`}
   `;
 }
 
