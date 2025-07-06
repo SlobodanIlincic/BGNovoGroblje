@@ -265,8 +265,8 @@ function najblizaUdaljenostDoPoligona(tacka, poligon) {
 
     const polygon = L.polygon(parcela.koordinate);
     const blizu = tacke.some(t => {
-
-      const dist = najblizaUdaljenostDoPoligona(t, polygon);
+      const najbliza = L.GeometryUtil.closest(map, polygon.getLatLngs()[0], t);
+      const dist = map.distance(t, najbliza);
       return dist < 10; // prag u metrima
     });
 
