@@ -74,7 +74,7 @@
     const slojOrijentiri = L.layerGroup().addTo(map);
     const slojParcele = L.layerGroup().addTo(map);
     let sviOrijentiri = [];
-
+    let sveParcele = [];
     const params = new URLSearchParams(window.location.search);
     const tacke = (params.get('wp') || '').split('|').map(coord => {
       const [lat, lng] = coord.split(',').map(Number);
@@ -87,6 +87,7 @@
     fetch('parcele.json')
       .then(res => res.json())
       .then(parcele => {
+        sveParcele = parcele;
         const filtrirane = parcele.filter(p => trazene.includes(p.id));
         filtrirane.forEach((p, i) => {
           const jePoslednja = i === filtrirane.length - 1;
@@ -192,15 +193,29 @@
         }).addTo(map);
         map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
       }
+const usputneParcele = new Set();
 
-      const navDiv = document.getElementById('navigacija');
-      navDiv.innerHTML = `
-        <strong>Uputstvo do groba:</strong><br>
-        ${tekstualnoVodjenje.length > 0
-          ? tekstualnoVodjenje.map(o => `➤ ${o}`).join('<br>')
-          : '➤ Bez orijentira'}<br>
-        ➤ Parcela: ${nazivParcele}
-      `;
+tacke.forEach(koord => {
+  sveParcele.forEach(parcela => {
+    if (!trazene.includes(parcela.id)) {
+      const poligon = L.polygon(parcela.koordinate);
+      if (poligon.getBounds().contains(koord)) {
+        usputneParcele.add(parcela.id);
+      }
+    }
+  });
+});
+
+navDiv.innerHTML = `
+  <strong>Uputstvo do groba:</strong><br>
+  ${tekstualnoVodjenje.length > 0
+    ? tekstualnoVodjenje.map(o => `➤ ${o}`).join('<br>')
+    : '➤ Bez orijentira'}<br>
+  ${usputneParcele.size > 0
+    ? `➤ Pored parcela: ${[...usputneParcele].join(', ')}<br>`
+    : ''}
+  ➤ Parcela: ${nazivParcele}
+`;
     }
 
     function pokreniAnimaciju() {
