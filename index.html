@@ -84,6 +84,21 @@
     const trazene = params.get('parcela')?.split(',') || [];
     const nazivParcele = trazene[trazene.length - 1] || 'Nepoznato';
 
+    
+function pointInPolygon(point, vs) {
+  const x = point.lng, y = point.lat;
+  let inside = false;
+  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    const xi = vs[i][1], yi = vs[i][0];
+    const xj = vs[j][1], yj = vs[j][0];
+
+    const intersect = ((yi > y) !== (yj > y)) &&
+                      (x < (xj - xi) * (y - yi) / (yj - yi + 0.00000001) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
     fetch('parcele.json')
       .then(res => res.json())
       .then(parcele => {
@@ -200,19 +215,17 @@ function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
   }
 
   // Pronađi usputne parcele
-  const usputneParcele = new Set();
-  tacke.forEach(koord => {
-    sveParcele.forEach(parcela => {
-      if (!trazene.includes(parcela.id)) {
-        const poligon = L.polygon(parcela.koordinate);
-        if (poligon.getBounds().contains(koord)) {
-          console.log("Usputne parcele:", parcela.id);
-
-          usputneParcele.add(parcela.id);
-        }
+const usputneParcele = new Set();
+tacke.forEach(koord => {
+  sveParcele.forEach(parcela => {
+    if (!trazene.includes(parcela.id)) {
+      if (pointInPolygon(koord, parcela.koordinate)) {
+        usputneParcele.add(parcela.naziv || parcela.id);
       }
-    });
+    }
   });
+});
+
 
   // Prikaz tekstualnog vođenja
   navDiv.innerHTML = `
