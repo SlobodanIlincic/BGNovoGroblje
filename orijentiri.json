@@ -1,10 +1,5 @@
 [
-  {
-    "naziv": "Česma 1",
-    "lat": 44.8077,
-    "lng": 20.4885,
-    "tip": "česma"
-  },
+
   {
     "naziv": "Kapela Vojvode Radomira Putnika",
     "lat": 44.808098,
@@ -12,15 +7,10 @@
     "tip": "spomenik"
   },
   {
-    "naziv": "Kapija",
+    "naziv": "Aleja zaslužnih gradjana",
     "lat": 44.8080,
     "lng": 20.4875,
-    "tip": "kapija"
+    "tip": "spomenik"
   },
-  {
-    "naziv": "Česma 2",
-    "lat": 44.8082,
-    "lng": 20.4880,
-    "tip": "česma"
-  }
+
 ]
