@@ -45,12 +45,10 @@
 <body>
   <div id="map"></div>
   <div class="kontrole">
-    <button id="undo">⏪ Poništi</button>
-    <button id="reset">🗑️ Obriši sve</button>
+    <button onclick="pokreniAnimaciju()">▶️ Prikaži kretanje</button>
     <select id="filterOrijentira">
       <option value="svi">Prikaži sve orijentire</option>
     </select>
-    <button onclick="pokreniAnimaciju()">▶️ Prikaži kretanje</button>
   </div>
   <div id="navigacija"></div>
 
@@ -193,4 +191,5 @@
         <strong>Uputstvo do groba:</strong><br>
         ${tekstualnoVodjenje.length > 0
           ? tekstualnoVodjenje.map(o => `➤ ${o}`).join('<br>')
-          : '➤ Bez orijentira
+          : '➤ Bez orijentira'}<br>
+        ➤ Parcela: ${nazivParcele
