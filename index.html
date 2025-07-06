@@ -71,44 +71,71 @@
     const trazene = params.get('parcela')?.split(',') || [];
     const nazivParcele = trazene[trazene.length - 1] || 'Nepoznato';
 
-    // === Prikaz orijentira i generisanje tekstualnog vođenja ===
-    fetch('orijentiri.json')
-      .then(res => res.json())
-      .then(orijentiri => {
-        const tekstualnoVodjenje = [];
+    Promise.all([
+      fetch('orijentiri.json').then(res => res.json()),
+      fetch('parcele.json').then(res => res.json())
+    ]).then(([orijentiri, parcele]) => {
+      const tekstualnoVodjenje = [];
 
-        orijentiri.forEach(o => {
-          const orijentirLatLng = L.latLng(o.lat, o.lng);
-          for (let i = 0; i < tacke.length; i++) {
-            const dist = orijentirLatLng.distanceTo(tacke[i]);
-            if (dist < 20) {
-              if (!tekstualnoVodjenje.includes(o.naziv)) {
-                tekstualnoVodjenje.push(o.naziv);
-              }
-              break;
+      // Orijentiri
+      orijentiri.forEach(o => {
+        const orijentirLatLng = L.latLng(o.lat, o.lng);
+        for (let i = 0; i < tacke.length; i++) {
+          const dist = orijentirLatLng.distanceTo(tacke[i]);
+          if (dist < 20) {
+            if (!tekstualnoVodjenje.includes(o.naziv)) {
+              tekstualnoVodjenje.push(o.naziv);
             }
+            break;
           }
+        }
 
-          const ikona = L.icon({
-            iconUrl: o.ikona || 'orijentir.png',
-            iconSize: [28, 28],
-            iconAnchor: [14, 28],
-            popupAnchor: [0, -28]
-          });
-
-          L.marker([o.lat, o.lng], { icon: ikona })
-            .addTo(map)
-            .bindPopup(o.naziv)
-            .bindTooltip(o.naziv, {
-              permanent: true,
-              direction: "top",
-              offset: [0, -10],
-              className: "orijentir-label"
-            });
+        const ikona = L.icon({
+          iconUrl: o.ikona || 'orijentir.png',
+          iconSize: [28, 28],
+          iconAnchor: [14, 28],
+          popupAnchor: [0, -28]
         });
 
-        nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje);
+        L.marker([o.lat, o.lng], { icon: ikona })
+          .addTo(map)
+          .bindPopup(o.naziv)
+          .bindTooltip(o.naziv, {
+            permanent: true,
+            direction: "top",
+            offset: [0, -10],
+            className: "orijentir-label"
+          });
       });
+
+      // Parcele
+      const slojParcele = L.layerGroup().addTo(map);
+      const filtrirane = parcele.filter(p => trazene.includes(p.id));
+
+      filtrirane.forEach((p, i) => {
+        const jePoslednja = i === filtrirane.length - 1;
+
+        const poligon = L.polygon(p.koordinate, {
+          color: jePoslednja ? 'red' : '#666',
+          weight: jePoslednja ? 3 : 1,
+          fillColor: jePoslednja ? '#f88' : '#ccc',
+          fillOpacity: jePoslednja ? 0.6 : 0.4
+        }).addTo(slojParcele);
+
+        poligon.bindTooltip(p.naziv, {
+          permanent: true,
+          direction: 'center',
+          className: 'orijentir-label'
+        });
+
+        if (jePoslednja) {
+          map.fitBounds(poligon.getBounds(), { padding: [30, 30] });
+        }
+      });
+
+      // Putanja
+      nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje);
+    });
 
     function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
       tacke.forEach((latlng, i) => {
@@ -159,37 +186,7 @@
       }
     }
 
-    // === Prikaz parcela ===
-    const slojParcele = L.layerGroup().addTo(map);
-
-    fetch('parcele.json')
-      .then(res => res.json())
-      .then(parcele => {
-        const filtrirane = parcele.filter(p => trazene.includes(p.id));
-
-        filtrirane.forEach((p, i) => {
-          const jePoslednja = i === filtrirane.length - 1;
-
-          const poligon = L.polygon(p.koordinate, {
-            color: jePoslednja ? 'red' : '#666',
-            weight: jePoslednja ? 3 : 1,
-            fillColor: jePoslednja ? '#f88' : '#ccc',
-            fillOpacity: jePoslednja ? 0.6 : 0.4
-          }).addTo(slojParcele);
-
-          poligon.bindTooltip(p.naziv, {
-            permanent: true,
-            direction: 'center',
-            className: 'orijentir-label'
-          });
-
-          if (jePoslednja) {
-            map.fitBounds(poligon.getBounds(), { padding: [30, 30] });
-          }
-        });
-      });
-
-    // === Undo i Reset ===
+    // Undo i Reset
     document.getElementById('undo').addEventListener('click', () => {
       if (kliknuteTacke.length === 0) return;
       kliknuteTacke.pop();
@@ -206,3 +203,6 @@
       kliknuteLinije.forEach(l => map.removeLayer(l));
       kliknuteLinije.length = 0;
     });
+  </script>
+</body>
+</html>
