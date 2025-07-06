@@ -83,6 +83,8 @@
     }).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
 
     const trazene = params.get('parcela')?.split(',') || [];
+    console.log("Trazene parcele iz URL-a:", trazene);
+
     const nazivParcele = trazene[trazene.length - 1] || 'Nepoznato';
 
     
