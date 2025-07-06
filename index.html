@@ -167,56 +167,63 @@
       nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje);
     }
 
-    function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
-      tacke.forEach((latlng, i) => {
-        let ikona = ikonaOrijentir;
-        if (i === 0) ikona = ikonaUlaz;
-        if (i === tacke.length - 1) ikona = ikonaGrob;
+function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
+  const navDiv = document.getElementById('navigacija');
+  if (!navDiv) return;
 
-        L.marker(latlng, { icon: ikona })
-          .addTo(map)
-          .bindPopup(i === 0 ? "Ulaz" : i === tacke.length - 1 ? nazivParcele : `Tačka ${i + 1}`)
-          .bindTooltip(i === 0 ? "Ulaz" : i === tacke.length - 1 ? "Grob" : "", {
-            permanent: i === 0 || i === tacke.length - 1,
-            direction: "top",
-            offset: [0, -10],
-            className: "orijentir-label"
-          });
+  // Prikaz markera na tačkama
+  tacke.forEach((latlng, i) => {
+    let ikona = ikonaOrijentir;
+    if (i === 0) ikona = ikonaUlaz;
+    if (i === tacke.length - 1) ikona = ikonaGrob;
+
+    L.marker(latlng, { icon: ikona })
+      .addTo(map)
+      .bindPopup(i === 0 ? "Ulaz" : i === tacke.length - 1 ? nazivParcele : `Tačka ${i + 1}`)
+      .bindTooltip(i === 0 ? "Ulaz" : i === tacke.length - 1 ? "Grob" : "", {
+        permanent: i === 0 || i === tacke.length - 1,
+        direction: "top",
+        offset: [0, -10],
+        className: "orijentir-label"
       });
-
-      if (tacke.length > 1) {
-        L.polyline(tacke, {
-          color: 'gray',
-          weight: 3,
-          dashArray: '5, 5',
-          opacity: 0.8
-        }).addTo(map);
-        map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
-      }
-const usputneParcele = new Set();
-
-tacke.forEach(koord => {
-  sveParcele.forEach(parcela => {
-    if (!trazene.includes(parcela.id)) {
-      const poligon = L.polygon(parcela.koordinate);
-      if (poligon.getBounds().contains(koord)) {
-        usputneParcele.add(parcela.id);
-      }
-    }
   });
-});
 
-navDiv.innerHTML = `
-  <strong>Uputstvo do groba:</strong><br>
-  ${tekstualnoVodjenje.length > 0
-    ? tekstualnoVodjenje.map(o => `➤ ${o}`).join('<br>')
-    : '➤ Bez orijentira'}<br>
-  ${usputneParcele.size > 0
-    ? `➤ Pored parcela: ${[...usputneParcele].join(', ')}<br>`
-    : ''}
-  ➤ Parcela: ${nazivParcele}
-`;
-    }
+  // Crtanje linije
+  if (tacke.length > 1) {
+    L.polyline(tacke, {
+      color: 'gray',
+      weight: 3,
+      dashArray: '5, 5',
+      opacity: 0.8
+    }).addTo(map);
+    map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
+  }
+
+  // Pronađi usputne parcele
+  const usputneParcele = new Set();
+  tacke.forEach(koord => {
+    sveParcele.forEach(parcela => {
+      if (!trazene.includes(parcela.id)) {
+        const poligon = L.polygon(parcela.koordinate);
+        if (poligon.getBounds().contains(koord)) {
+          usputneParcele.add(parcela.id);
+        }
+      }
+    });
+  });
+
+  // Prikaz tekstualnog vođenja
+  navDiv.innerHTML = `
+    <strong>Uputstvo do groba:</strong><br>
+    ${tekstualnoVodjenje.length > 0
+      ? tekstualnoVodjenje.map(o => `➤ ${o}`).join('<br>')
+      : '➤ Bez orijentira'}<br>
+    ${usputneParcele.size > 0
+      ? `➤ Pored parcela: ${[...usputneParcele].join(', ')}<br>`
+      : ''}
+    ➤ Parcela: ${nazivParcele}
+  `;
+}
 
     function pokreniAnimaciju() {
       animirajKretanje(tacke, 1500);
