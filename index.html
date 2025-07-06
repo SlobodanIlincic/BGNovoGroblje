@@ -27,6 +27,19 @@
       border-radius: 6px;
       box-shadow: 0 0 4px rgba(0,0,0,0.2);
     }
+    #navigacija {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.95);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.5;
+      box-shadow: 0 0 6px rgba(0,0,0,0.2);
+      max-width: 300px;
+      z-index: 1000;
+    }
   </style>
 </head>
 <body>
@@ -35,6 +48,8 @@
     <button id="undo">⏪ Poništi</button>
     <button id="reset">🗑️ Obriši sve</button>
   </div>
+  <div id="navigacija"></div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const kliknuteTacke = [];
@@ -76,7 +91,7 @@
         const orijentirLatLng = L.latLng(o.lat, o.lng);
         for (let i = 0; i < tacke.length; i++) {
           const dist = orijentirLatLng.distanceTo(tacke[i]);
-          if (dist < 250) {
+          if (dist < 100) {
             if (!tekstualnoVodjenje.includes(o.naziv)) {
               tekstualnoVodjenje.push(o.naziv);
             }
@@ -148,13 +163,7 @@
           ikona = ikonaGrob;
           marker = L.marker(latlng, { icon: ikona })
             .addTo(map)
-            .bindPopup(`
-              <strong>Grob: ${nazivParcele}</strong><br>
-              ${tekstualnoVodjenje.length > 0
-                ? tekstualnoVodjenje.map(o => `➤ Prođite pored ${o}`).join('<br>')
-                : '➤ Nema orijentira na putanji.'}<br>
-              ➤ Grob se nalazi u parceli ${nazivParcele}
-            `)
+            .bindPopup(`Grob: ${nazivParcele}`)
             .bindTooltip("Grob", {
               permanent: true,
               direction: "top",
@@ -177,6 +186,16 @@
         }).addTo(map);
         map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
       }
+
+      // Prikaz teksta u donjem levom uglu
+      const navDiv = document.getElementById('navigacija');
+      navDiv.innerHTML = `
+        <strong>Uputstvo do groba:</strong><br>
+        ${tekstualnoVodjenje.length > 0
+          ? tekstualnoVodjenje.map(o => `➤ Prođite pored ${o}`).join('<br>')
+          : '➤ Nema orijentira na putanji.'}<br>
+        ➤ Grob se nalazi u parceli ${nazivParcele}
+      `;
     }
   </script>
 </body>
