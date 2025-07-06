@@ -230,7 +230,7 @@ function pointInPolygon(point, vs) {
     sveParcele.forEach(parcela => {
       if (!trazene.includes(parcela.id)) {
         const polygon = L.polygon(parcela.koordinate);
-        const najbliza = L.GeometryUtil.closest(map, polygon, koord);
+        const najbliza = L.GeometryUtil.closest(map, polygon.getLatLngs()[0], koord);
         const dist = map.distance(koord, najbliza);
         if (dist < 100) {
           usputneParcele.add(parcela.naziv || parcela.id);
@@ -247,7 +247,7 @@ function pointInPolygon(point, vs) {
 
     const polygon = L.polygon(parcela.koordinate);
     const blizu = tacke.some(t => {
-      const najbliza = L.GeometryUtil.closest(map, polygon, t);
+      const najbliza = L.GeometryUtil.closest(map, polygon.getLatLngs()[0], t);
       const dist = map.distance(t, najbliza);
       return dist < 10; // prag u metrima
     });
