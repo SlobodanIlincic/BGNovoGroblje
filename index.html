@@ -55,10 +55,6 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const kliknuteTacke = [];
-    const kliknutiMarkeri = [];
-    const kliknuteLinije = [];
-
     const map = L.map('map').setView([44.8, 20.5], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -70,34 +66,24 @@
     const ikonaOrijentir = L.icon({ iconUrl: 'walking.svg', iconSize: [28, 28], iconAnchor: [14, 28] });
 
     const slojOrijentiri = L.layerGroup().addTo(map);
+    const slojParcele = L.layerGroup().addTo(map);
     let sviOrijentiri = [];
 
-    function getWaypointsFromURL() {
-      const params = new URLSearchParams(window.location.search);
-      const wpParam = params.get('wp');
-      if (!wpParam) return [];
-      return wpParam.split('|').map(coord => {
-        const [lat, lng] = coord.split(',').map(Number);
-        return L.latLng(lat, lng);
-      });
-    }
-
-    const tacke = getWaypointsFromURL();
     const params = new URLSearchParams(window.location.search);
+    const tacke = (params.get('wp') || '').split('|').map(coord => {
+      const [lat, lng] = coord.split(',').map(Number);
+      return L.latLng(lat, lng);
+    }).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
+
     const trazene = params.get('parcela')?.split(',') || [];
     const nazivParcele = trazene[trazene.length - 1] || 'Nepoznato';
-
-    // === Prikaz parcela ===
-    const slojParcele = L.layerGroup().addTo(map);
 
     fetch('parcele.json')
       .then(res => res.json())
       .then(parcele => {
         const filtrirane = parcele.filter(p => trazene.includes(p.id));
-
         filtrirane.forEach((p, i) => {
           const jePoslednja = i === filtrirane.length - 1;
-
           const poligon = L.polygon(p.koordinate, {
             color: jePoslednja ? 'red' : '#666',
             weight: jePoslednja ? 3 : 1,
@@ -117,14 +103,11 @@
         });
       });
 
-    // === Učitavanje i prikaz orijentira ===
     fetch('orijentiri.json')
       .then(res => res.json())
       .then(orijentiri => {
         sviOrijentiri = orijentiri;
-
-        // Popuni dropdown jedinstvenim tipovima
-        const tipovi = [...new Set(orijentiri.map(o => o.tip))];
+        const tipovi = [...new Set(orijentiri.map(o => o.tip).filter(Boolean))];
         const select = document.getElementById('filterOrijentira');
         tipovi.forEach(tip => {
           const opt = document.createElement('option');
@@ -132,9 +115,12 @@
           opt.textContent = tip.charAt(0).toUpperCase() + tip.slice(1);
           select.appendChild(opt);
         });
-
         prikaziOrijentire('svi');
       });
+
+    document.getElementById('filterOrijentira').addEventListener('change', e => {
+      prikaziOrijentire(e.target.value);
+    });
 
     function prikaziOrijentire(tip) {
       slojOrijentiri.clearLayers();
@@ -146,13 +132,10 @@
 
       filtrirani.forEach(o => {
         const orijentirLatLng = L.latLng(o.lat, o.lng);
-
         for (let i = 0; i < tacke.length; i++) {
           const dist = orijentirLatLng.distanceTo(tacke[i]);
-          if (dist < 100) {
-            if (!tekstualnoVodjenje.includes(o.naziv)) {
-              tekstualnoVodjenje.push(o.naziv);
-            }
+          if (dist < 100 && !tekstualnoVodjenje.includes(o.naziv)) {
+            tekstualnoVodjenje.push(o.naziv);
             break;
           }
         }
@@ -177,44 +160,25 @@
       nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje);
     }
 
-    document.getElementById('filterOrijentira').addEventListener('change', e => {
-      prikaziOrijentire(e.target.value);
-    });
-
     function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
       tacke.forEach((latlng, i) => {
         let ikona = ikonaOrijentir;
-        let marker = null;
+        if (i === 0) ikona = ikonaUlaz;
+        if (i === tacke.length - 1) ikona = ikonaGrob;
 
-        if (i === 0) {
-          ikona = ikonaUlaz;
-          marker = L.marker(latlng, { icon: ikona })
-            .addTo(map)
-            .bindPopup("Ulaz")
-            .bindTooltip("Ulaz", {
-              permanent: true,
-              direction: "top",
-              offset: [0, -10],
-              className: "orijentir-label"
-            });
-        } else if (i === tacke.length - 1) {
-          ikona = ikonaGrob;
-          marker = L.marker(latlng, { icon: ikona })
-            .addTo(map)
-            .bindPopup(`${nazivParcele}`)
-            .bindTooltip("Grob", {
-              permanent: true,
-              direction: "top",
-              offset: [0, -10],
-              className: "orijentir-label"
-            });
-        } else {
-          marker = L.marker(latlng, { icon: ikona })
-            .addTo(map)
-            .bindPopup(`Tačka ${i + 1}`);
-        }
+        const marker = L.marker(latlng, { icon: ikona })
+          .addTo(map)
+          .bindPopup(i === 0 ? "Ulaz" : i === tacke.length - 1 ? nazivParcele : `Tačka ${i + 1}`)
+          .bindTooltip(i === 0 ? "Ulaz" : i === tacke.length - 1 ? "Grob" : "", {
+            permanent: i === 0 || i === tacke.length - 1,
+            direction: "top",
+            offset: [0, -10],
+            className: "orijentir-label"
+          });
+      });
 
-                L.polyline(tacke, {
+      if (tacke.length > 1) {
+        L.polyline(tacke, {
           color: 'gray',
           weight: 3,
           dashArray: '5, 5',
@@ -223,7 +187,6 @@
         map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
       }
 
-      // Prikaz tekstualnog vođenja u donjem levom uglu
       const navDiv = document.getElementById('navigacija');
       navDiv.innerHTML = `
         <strong>Uputstvo do groba:</strong><br>
@@ -234,9 +197,3 @@
       `;
     }
   </script>
-</body>
-</html>
-      });
-
-      if (tacke.length > 1) {
-        L.polyline(tacke, {
