@@ -17,12 +17,29 @@
       border-radius: 4px;
       font-size: 13px;
     }
+    .kontrole {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.9);
+      padding: 6px;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <div class="kontrole">
+    <button id="undo">⏪ Poništi</button>
+    <button id="reset">🗑️ Obriši sve</button>
+  </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    const kliknuteTacke = [];
+const kliknutiMarkeri = [];
+const kliknuteLinije = [];
     const map = L.map('map').setView([44.8, 20.5], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -95,22 +112,27 @@
       map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
     }
 
-    map.on('click', function (e) {
-      const latlng = e.latlng;
-      sveTacke.push(latlng);
-      L.marker(latlng, { icon: ikonaOrijentir })
-        .addTo(map)
-        .bindPopup(`Dodato: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`)
-        .openPopup();
+map.on('click', function (e) {
+  const latlng = e.latlng;
+  kliknuteTacke.push(latlng);
 
-      if (sveTacke.length > 1) {
-        L.polyline(sveTacke, {
-          color: 'blue',
-          weight: 2,
-          dashArray: '4, 4'
-        }).addTo(map);
-      }
-    });
+  const marker = L.marker(latlng, { icon: ikonaOrijentir })
+    .addTo(map)
+    .bindPopup(`Dodato: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`)
+    .openPopup();
+
+  kliknutiMarkeri.push(marker);
+
+  if (kliknuteTacke.length > 1) {
+    const linija = L.polyline(kliknuteTacke, {
+      color: 'blue',
+      weight: 2,
+      dashArray: '4, 4'
+    }).addTo(map);
+    kliknuteLinije.push(linija);
+  }
+});
+
 
    fetch('orijentiri.json')
   .then(res => res.json())
@@ -134,7 +156,28 @@
         });
     });
   });
+document.getElementById('undo').addEventListener('click', () => {
+  if (kliknuteTacke.length === 0) return;
 
+  kliknuteTacke.pop();
+
+  const marker = kliknutiMarkeri.pop();
+  if (marker) map.removeLayer(marker);
+
+  const linija = kliknuteLinije.pop();
+  if (linija) map.removeLayer(linija);
+});
+
+    document.getElementById('reset').addEventListener('click', () => {
+  kliknuteTacke.length = 0;
+
+  kliknutiMarkeri.forEach(m => map.removeLayer(m));
+  kliknutiMarkeri.length = 0;
+
+  kliknuteLinije.forEach(l => map.removeLayer(l));
+  kliknuteLinije.length = 0;
+});
+    
     // === Prikaz parcela iz JSON fajla ===
     const slojParcele = L.layerGroup().addTo(map);
 
