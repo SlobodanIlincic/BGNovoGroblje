@@ -235,7 +235,7 @@ function animirajKretanje(tacke, brzina = 1000) {
 
     const from = tacke[i - 1];
     const to = tacke[i];
- const angle = Math.atan2(to.lat - from.lat, to.lng - from.lng) * 180 / Math.PI + 90;
+ const angle = Math.atan2(to.lat - from.lat, to.lng - from.lng) * 180 / Math.PI + 180;
 
     const img = marker.getElement().querySelector('img');
     if (img) img.style.transform = `rotate(${angle}deg)`;
