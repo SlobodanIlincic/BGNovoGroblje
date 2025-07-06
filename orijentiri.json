@@ -1,12 +1,26 @@
 [
   {
-    "naziv": "Česma",
+    "naziv": "Česma 1",
     "lat": 44.8077,
-    "lng": 20.4885
+    "lng": 20.4885,
+    "tip": "česma"
   },
   {
-    "naziv": "Spomenik",
+    "naziv": "Spomenik 1",
     "lat": 44.8071,
-    "lng": 20.4895
+    "lng": 20.4895,
+    "tip": "spomenik"
+  },
+  {
+    "naziv": "Kapija",
+    "lat": 44.8080,
+    "lng": 20.4875,
+    "tip": "kapija"
+  },
+  {
+    "naziv": "Česma 2",
+    "lat": 44.8082,
+    "lng": 20.4880,
+    "tip": "česma"
   }
 ]
