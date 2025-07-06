@@ -250,8 +250,8 @@ function najblizaUdaljenostDoPoligona(tacka, poligon) {
         const polygon = L.polygon(parcela.koordinate);
         const najbliza = L.GeometryUtil.closest(map, polygon.getLatLngs()[0], koord);
         const dist = map.distance(koord, najbliza);
-          console.log("usputna parcela:", L.parcela.naziv);
-        console.log("dinst:", dist);
+        console.log("usputna parcela:", parcela.naziv || parcela.id);
+console.log("dist:", dist);
         if (dist < 100) {
           usputneParcele.add(parcela.naziv || parcela.id);
         }
