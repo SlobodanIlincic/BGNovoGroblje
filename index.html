@@ -15,7 +15,7 @@
       border: 1px solid #ccc;
       padding: 2px 6px;
       border-radius: 4px;
-      font-size: 10px;
+      font-size: 11px;
     }
     .kontrole {
       position: absolute;
@@ -47,6 +47,9 @@
   <div class="kontrole">
     <button id="undo">⏪ Poništi</button>
     <button id="reset">🗑️ Obriši sve</button>
+    <select id="filterOrijentira">
+      <option value="svi">Prikaži sve orijentire</option>
+    </select>
   </div>
   <div id="navigacija"></div>
 
@@ -66,6 +69,9 @@
     const ikonaGrob = L.icon({ iconUrl: 'grob.png', iconSize: [28, 28], iconAnchor: [14, 28] });
     const ikonaOrijentir = L.icon({ iconUrl: 'walking.svg', iconSize: [28, 28], iconAnchor: [14, 28] });
 
+    const slojOrijentiri = L.layerGroup().addTo(map);
+    let sviOrijentiri = [];
+
     function getWaypointsFromURL() {
       const params = new URLSearchParams(window.location.search);
       const wpParam = params.get('wp');
@@ -81,14 +87,66 @@
     const trazene = params.get('parcela')?.split(',') || [];
     const nazivParcele = trazene[trazene.length - 1] || 'Nepoznato';
 
-    Promise.all([
-      fetch('orijentiri.json').then(res => res.json()),
-      fetch('parcele.json').then(res => res.json())
-    ]).then(([orijentiri, parcele]) => {
+    // === Prikaz parcela ===
+    const slojParcele = L.layerGroup().addTo(map);
+
+    fetch('parcele.json')
+      .then(res => res.json())
+      .then(parcele => {
+        const filtrirane = parcele.filter(p => trazene.includes(p.id));
+
+        filtrirane.forEach((p, i) => {
+          const jePoslednja = i === filtrirane.length - 1;
+
+          const poligon = L.polygon(p.koordinate, {
+            color: jePoslednja ? 'red' : '#666',
+            weight: jePoslednja ? 3 : 1,
+            fillColor: jePoslednja ? '#f88' : '#ccc',
+            fillOpacity: jePoslednja ? 0.6 : 0.4
+          }).addTo(slojParcele);
+
+          poligon.bindTooltip(p.id, {
+            permanent: true,
+            direction: 'center',
+            className: 'orijentir-label'
+          });
+
+          if (jePoslednja) {
+            map.fitBounds(poligon.getBounds(), { padding: [30, 30] });
+          }
+        });
+      });
+
+    // === Učitavanje i prikaz orijentira ===
+    fetch('orijentiri.json')
+      .then(res => res.json())
+      .then(orijentiri => {
+        sviOrijentiri = orijentiri;
+
+        // Popuni dropdown jedinstvenim tipovima
+        const tipovi = [...new Set(orijentiri.map(o => o.tip))];
+        const select = document.getElementById('filterOrijentira');
+        tipovi.forEach(tip => {
+          const opt = document.createElement('option');
+          opt.value = tip;
+          opt.textContent = tip.charAt(0).toUpperCase() + tip.slice(1);
+          select.appendChild(opt);
+        });
+
+        prikaziOrijentire('svi');
+      });
+
+    function prikaziOrijentire(tip) {
+      slojOrijentiri.clearLayers();
       const tekstualnoVodjenje = [];
 
-      orijentiri.forEach(o => {
+      const filtrirani = tip === 'svi'
+        ? sviOrijentiri
+        : sviOrijentiri.filter(o => o.tip === tip);
+
+      filtrirani.forEach(o => {
         const orijentirLatLng = L.latLng(o.lat, o.lng);
+
         for (let i = 0; i < tacke.length; i++) {
           const dist = orijentirLatLng.distanceTo(tacke[i]);
           if (dist < 100) {
@@ -106,7 +164,7 @@
         });
 
         L.marker([o.lat, o.lng], { icon: ikona })
-          .addTo(map)
+          .addTo(slojOrijentiri)
           .bindPopup(o.naziv)
           .bindTooltip(o.naziv, {
             permanent: true,
@@ -116,31 +174,11 @@
           });
       });
 
-      const slojParcele = L.layerGroup().addTo(map);
-      const filtrirane = parcele.filter(p => trazene.includes(p.id));
-
-      filtrirane.forEach((p, i) => {
-        const jePoslednja = i === filtrirane.length - 1;
-
-        const poligon = L.polygon(p.koordinate, {
-          color: jePoslednja ? 'red' : '#666',
-          weight: jePoslednja ? 3 : 1,
-          fillColor: jePoslednja ? '#f88' : '#ccc',
-          fillOpacity: jePoslednja ? 0.6 : 0.4
-        }).addTo(slojParcele);
-
-        poligon.bindTooltip(p.id, {
-          permanent: true,
-          direction: 'center',
-          className: 'orijentir-label'
-        });
-
-        if (jePoslednja) {
-          map.fitBounds(poligon.getBounds(), { padding: [30, 30] });
-        }
-      });
-
       nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje);
+    }
+
+    document.getElementById('filterOrijentira').addEventListener('change', e => {
+      prikaziOrijentire(e.target.value);
     });
 
     function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
@@ -163,7 +201,7 @@
           ikona = ikonaGrob;
           marker = L.marker(latlng, { icon: ikona })
             .addTo(map)
-            .bindPopup(`Grob: ${nazivParcele}`)
+            .bindPopup(`${nazivParcele}`)
             .bindTooltip("Grob", {
               permanent: true,
               direction: "top",
@@ -179,24 +217,3 @@
 
       if (tacke.length > 1) {
         L.polyline(tacke, {
-          color: 'gray',
-          weight: 3,
-          dashArray: '5, 5',
-          opacity: 0.8
-        }).addTo(map);
-        map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
-      }
-
-      // Prikaz teksta u donjem levom uglu
-      const navDiv = document.getElementById('navigacija');
-      navDiv.innerHTML = `
-        <strong>Uputstvo do groba:</strong><br>
-        ${tekstualnoVodjenje.length > 0
-          ? tekstualnoVodjenje.map(o => `➤ Prođite pored ${o}`).join('<br>')
-          : '➤ Nema orijentira na putanji.'}<br>
-        ➤ Grob se nalazi u parceli ${nazivParcele}
-      `;
-    }
-  </script>
-</body>
-</html>
