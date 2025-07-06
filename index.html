@@ -201,31 +201,44 @@
     }
 
 function animirajKretanje(tacke, brzina = 1000) {
+  if (tacke.length < 2) return;
 
-          if (tacke.length < 2) return;
+  // Marker koji se kreće
+  const marker = L.marker(tacke[0], {
+    icon: L.icon({
+      iconUrl: 'walking.svg',
+      iconSize: [40, 40],
+      iconAnchor: [20, 40]
+    })
+  }).addTo(map);
 
-      const marker = L.marker(tacke[0], {
-        icon: L.icon({
-          iconUrl: 'walking.svg',
-          iconSize: [28, 28],
-          iconAnchor: [14, 28]
-        })
-      }).addTo(map);
+  // Pulsirajući krug ispod markera
+  const krug = L.circleMarker(tacke[0], {
+    radius: 12,
+    color: '#007bff',
+    fillColor: '#3399ff',
+    fillOpacity: 0.4,
+    weight: 2
+  }).addTo(map);
 
-      let i = 1;
-      function pomeri() {
-        if (i >= tacke.length) {
-          marker.bindPopup("Stigli ste do groba").openPopup();
-          return;
-        }
-        marker.setLatLng(tacke[i]);
-        map.panTo(tacke[i]);
-        i++;
-        setTimeout(pomeri, brzina);
-      }
-
-      pomeri();
+  let i = 1;
+  function pomeri() {
+    if (i >= tacke.length) {
+      marker.bindPopup("Stigli ste do groba").openPopup();
+      return;
     }
+
+    marker.setLatLng(tacke[i]);
+    krug.setLatLng(tacke[i]);
+    map.setView(tacke[i], map.getZoom(), { animate: true });
+
+    i++;
+    setTimeout(pomeri, brzina);
+  }
+
+  pomeri();
+}
+
   </script>
 </body>
 </html>
