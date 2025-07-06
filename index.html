@@ -47,23 +47,18 @@
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    const ikonaUlaz = L.icon({ iconUrl: 'sign-in.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [-32, -48] });
-    const ikonaGrob = L.icon({ iconUrl: 'grob.png', iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28] });
-    const ikonaOrijentir = L.icon({ iconUrl: 'walking.svg', iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28] });
+    const ikonaUlaz = L.icon({ iconUrl: 'sign-in.png', iconSize: [32, 32], iconAnchor: [16, 32] });
+    const ikonaGrob = L.icon({ iconUrl: 'grob.png', iconSize: [28, 28], iconAnchor: [14, 28] });
+    const ikonaOrijentir = L.icon({ iconUrl: 'walking.svg', iconSize: [28, 28], iconAnchor: [14, 28] });
 
     function getWaypointsFromURL() {
       const params = new URLSearchParams(window.location.search);
       const wpParam = params.get('wp');
       if (!wpParam) return [];
-      try {
-        return wpParam.split('|').map(coord => {
-          const [lat, lng] = coord.split(',').map(Number);
-          return L.latLng(lat, lng);
-        });
-      } catch (e) {
-        console.error("Greška pri parsiranju koordinata:", e);
-        return [];
-      }
+      return wpParam.split('|').map(coord => {
+        const [lat, lng] = coord.split(',').map(Number);
+        return L.latLng(lat, lng);
+      });
     }
 
     const tacke = getWaypointsFromURL();
@@ -77,12 +72,11 @@
     ]).then(([orijentiri, parcele]) => {
       const tekstualnoVodjenje = [];
 
-      // Orijentiri
       orijentiri.forEach(o => {
         const orijentirLatLng = L.latLng(o.lat, o.lng);
         for (let i = 0; i < tacke.length; i++) {
           const dist = orijentirLatLng.distanceTo(tacke[i]);
-          if (dist < 80) {
+          if (dist < 100) {
             if (!tekstualnoVodjenje.includes(o.naziv)) {
               tekstualnoVodjenje.push(o.naziv);
             }
@@ -93,8 +87,7 @@
         const ikona = L.icon({
           iconUrl: o.ikona || 'orijentir.png',
           iconSize: [28, 28],
-          iconAnchor: [14, 28],
-          popupAnchor: [0, -28]
+          iconAnchor: [14, 28]
         });
 
         L.marker([o.lat, o.lng], { icon: ikona })
@@ -108,7 +101,6 @@
           });
       });
 
-      // Parcele
       const slojParcele = L.layerGroup().addTo(map);
       const filtrirane = parcele.filter(p => trazene.includes(p.id));
 
@@ -133,7 +125,6 @@
         }
       });
 
-      // Putanja
       nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje);
     });
 
@@ -159,7 +150,9 @@
             .addTo(map)
             .bindPopup(`
               <strong>Grob: ${nazivParcele}</strong><br>
-              ${tekstualnoVodjenje.map(o => `➤ Prođite pored ${o}`).join('<br>')}<br>
+              ${tekstualnoVodjenje.length > 0
+                ? tekstualnoVodjenje.map(o => `➤ Prođite pored ${o}`).join('<br>')
+                : '➤ Nema orijentira na putanji.'}<br>
               ➤ Grob se nalazi u parceli ${nazivParcele}
             `)
             .bindTooltip("Grob", {
@@ -185,24 +178,6 @@
         map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
       }
     }
-
-    // Undo i Reset
-    document.getElementById('undo').addEventListener('click', () => {
-      if (kliknuteTacke.length === 0) return;
-      kliknuteTacke.pop();
-      const marker = kliknutiMarkeri.pop();
-      if (marker) map.removeLayer(marker);
-      const linija = kliknuteLinije.pop();
-      if (linija) map.removeLayer(linija);
-    });
-
-    document.getElementById('reset').addEventListener('click', () => {
-      kliknuteTacke.length = 0;
-      kliknutiMarkeri.forEach(m => map.removeLayer(m));
-      kliknutiMarkeri.length = 0;
-      kliknuteLinije.forEach(l => map.removeLayer(l));
-      kliknuteLinije.length = 0;
-    });
   </script>
 </body>
 </html>
