@@ -6,6 +6,13 @@
   <title>Vizuelna ruta sa animacijom</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
+  .rotatable {
+    transform-origin: center center;
+    transition: transform 0.2s linear;
+  }
+</style>
+
+  <style>
     html, body { margin: 0; padding: 0; height: 100%; }
     #map { width: 100%; height: 100vh; }
     .orijentir-label {
@@ -203,16 +210,14 @@
 function animirajKretanje(tacke, brzina = 1000) {
   if (tacke.length < 2) return;
 
-  // Marker koji se kreće
-  const marker = L.marker(tacke[0], {
-    icon: L.icon({
-      iconUrl: 'walking.svg',
-      iconSize: [40, 40],
-      iconAnchor: [20, 40]
-    })
-  }).addTo(map);
+  const ikonaStrelica = L.divIcon({
+    className: '',
+    html: `<img src="arrow.svg" class="rotatable" style="width: 40px; height: 40px;">`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20]
+  });
 
-  // Pulsirajući krug ispod markera
+  const marker = L.marker(tacke[0], { icon: ikonaStrelica }).addTo(map);
   const krug = L.circleMarker(tacke[0], {
     radius: 12,
     color: '#007bff',
@@ -228,9 +233,16 @@ function animirajKretanje(tacke, brzina = 1000) {
       return;
     }
 
-    marker.setLatLng(tacke[i]);
-    krug.setLatLng(tacke[i]);
-    map.setView(tacke[i], map.getZoom(), { animate: true });
+    const from = tacke[i - 1];
+    const to = tacke[i];
+    const angle = Math.atan2(to.lat - from.lat, to.lng - from.lng) * 180 / Math.PI;
+
+    const img = marker.getElement().querySelector('img');
+    if (img) img.style.transform = `rotate(${angle}deg)`;
+
+    marker.setLatLng(to);
+    krug.setLatLng(to);
+    map.setView(to, map.getZoom(), { animate: true });
 
     i++;
     setTimeout(pomeri, brzina);
