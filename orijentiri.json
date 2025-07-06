@@ -1,15 +1,20 @@
 [
-
+    {
+    "naziv": "Crkva Svetog Nikole",
+    "lat":  44.809304,
+    "lng":    20.487195,
+    "tip": "spomenik"
+  } ,
+  {
+    "naziv": "Aleja zaslužnih gradjana",
+    "lat": 44.808393,
+    "lng": 20.487734,
+    "tip": "aleja"
+  } ,
   {
     "naziv": "Kapela Vojvode Radomira Putnika",
     "lat": 44.808098,
     "lng": 20.488764,
     "tip": "spomenik"
-  },
-  {
-    "naziv": "Aleja zaslužnih gradjana",
-    "lat": 44.808393,
-    "lng": 20.487734,
-    "tip": "spomenik"
-  } 
+  }
 ]
