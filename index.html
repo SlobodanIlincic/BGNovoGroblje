@@ -192,4 +192,40 @@
         ${tekstualnoVodjenje.length > 0
           ? tekstualnoVodjenje.map(o => `➤ ${o}`).join('<br>')
           : '➤ Bez orijentira'}<br>
-        ➤ Parcela: ${nazivParcele
+        ➤ Parcela: ${nazivParcele}
+      `;
+    }
+
+    function pokreniAnimaciju() {
+      animirajKretanje(tacke, 800);
+    }
+
+function animirajKretanje(tacke, brzina = 1000) {
+
+          if (tacke.length < 2) return;
+
+      const marker = L.marker(tacke[0], {
+        icon: L.icon({
+          iconUrl: 'walking.svg',
+          iconSize: [28, 28],
+          iconAnchor: [14, 28]
+        })
+      }).addTo(map);
+
+      let i = 1;
+      function pomeri() {
+        if (i >= tacke.length) {
+          marker.bindPopup("Stigli ste do groba").openPopup();
+          return;
+        }
+        marker.setLatLng(tacke[i]);
+        map.panTo(tacke[i]);
+        i++;
+        setTimeout(pomeri, brzina);
+      }
+
+      pomeri();
+    }
+  </script>
+</body>
+</html>
