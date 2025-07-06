@@ -206,6 +206,8 @@ function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
       if (!trazene.includes(parcela.id)) {
         const poligon = L.polygon(parcela.koordinate);
         if (poligon.getBounds().contains(koord)) {
+          console.log("Usputne parcele:", parcela.id);
+
           usputneParcele.add(parcela.id);
         }
       }
