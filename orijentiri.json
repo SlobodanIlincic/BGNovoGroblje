@@ -1,20 +1,12 @@
 [
   {
-    "naziv": "Kapela",
-    "lat": 44.8085,
-    "lng": 20.4887,
-    "ikona": "izlaz.png"
-  },
-  {
     "naziv": "Česma",
-    "lat": 44.8079,
-    "lng": 20.4899,
-    "ikona": "izlaz.png"
+    "lat": 44.8077,
+    "lng": 20.4885
   },
   {
     "naziv": "Spomenik",
-    "lat": 44.8072,
-    "lng": 20.4911,
-    "ikona": "izlaz.png"
+    "lat": 44.8071,
+    "lng": 20.4895
   }
 ]
