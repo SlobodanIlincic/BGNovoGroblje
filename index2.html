@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vizuelna ruta kroz tačke</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+    #map { width: 100%; height: 100vh; }
+    .orijentir-label {
+      background: white;
+      color: black;
+      font-weight: bold;
+      border: 1px solid #ccc;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([44.8, 20.5], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const ikonaUlaz = L.icon({ iconUrl: 'ulaz.png', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
+    const ikonaGrob = L.icon({ iconUrl: 'grob.png', iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28] });
+    const ikonaOrijentir = L.icon({ iconUrl: 'orijentir.png', iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28] });
+    const ikonaOrijentir1 = L.icon({ iconUrl: 'izlaz.png', iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28] });
+
+    function getWaypointsFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      const wpParam = params.get('wp');
+      if (!wpParam) return [];
+      try {
+        return wpParam.split('|').map(coord => {
+          const [lat, lng] = coord.split(',').map(Number);
+          return L.latLng(lat, lng);
+        });
+      } catch (e) {
+        console.error("Greška pri parsiranju koordinata:", e);
+        return [];
+      }
+    }
+
+    const tacke = getWaypointsFromURL();
+    const sveTacke = [...tacke];
+
+    tacke.forEach((latlng, i) => {
+      let ikona = ikonaOrijentir;
+      let marker = null;
+
+      if (i === 0) {
+        ikona = ikonaUlaz;
+        marker = L.marker(latlng, { icon: ikona })
+          .addTo(map)
+          .bindPopup("Ulaz")
+          .bindTooltip("Ulaz", {
+            permanent: true,
+            direction: "top",
+            offset: [0, -10],
+            className: "orijentir-label"
+          });
+      } else if (i === tacke.length - 1) {
+        ikona = ikonaGrob;
+        marker = L.marker(latlng, { icon: ikona })
+          .addTo(map)
+          .bindPopup("Grob")
+          .bindTooltip("Grob", {
+            permanent: true,
+            direction: "top",
+            offset: [0, -10],
+            className: "orijentir-label"
+          });
+      } else {
+        marker = L.marker(latlng, { icon: ikona })
+          .addTo(map)
+          .bindPopup(`Tačka ${i + 1}`);
+      }
+    });
+
+    if (tacke.length > 1) {
+      L.polyline(tacke, {
+        color: 'gray',
+        weight: 3,
+        dashArray: '5, 5',
+        opacity: 0.8
+      }).addTo(map);
+      map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
+    }
+
+    map.on('click', function (e) {
+      const latlng = e.latlng;
+      sveTacke.push(latlng);
+      L.marker(latlng, { icon: ikonaOrijentir })
+        .addTo(map)
+        .bindPopup(`Dodato: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`)
+        .openPopup();
+
+      if (sveTacke.length > 1) {
+        L.polyline(sveTacke, {
+          color: 'blue',
+          weight: 2,
+          dashArray: '4, 4'
+        }).addTo(map);
+      }
+    });
+
+    const orijentiri = [
+      { naziv: "Kapela", koordinate: [44.8085, 20.4887] },
+      { naziv: "Česma", koordinate: [44.8079, 20.4899] },
+      { naziv: "Spomenik", koordinate: [44.8072, 20.4911] }
+    ];
+
+    orijentiri.forEach(o => {
+      L.marker(o.koordinate, { icon: ikonaOrijentir1 })
+        .addTo(map)
+        .bindPopup(o.naziv)
+        .bindTooltip(o.naziv, {
+          permanent: true,
+          direction: "top",
+          offset: [0, -10],
+          className: "orijentir-label"
+        });
+    });
+
+    // === Prikaz parcela iz JSON fajla ===
+    const slojParcele = L.layerGroup().addTo(map);
+
+    function istakniParcelu(id) {
+      slojParcele.eachLayer(layer => {
+        if (layer._id === id) {
+          layer.setStyle({
+            color: 'red',
+            weight: 3,
+            fillColor: '#f88',
+            fillOpacity: 0.6
+          });
+          map.fitBounds(layer.getBounds(), { padding: [30, 30] });
+        } else {
+          layer.setStyle({
+            color: '#666',
+            weight: 1,
+            fillColor: '#ccc',
+            fillOpacity: 0.4
+          });
+        }
+      });
+    }
+
+    fetch('parcele.json')
+      .then(res => res.json())
+      .then(parcele => {
+        parcele.forEach(p => {
+          const poligon = L.polygon(p.koordinate, {
+            color: '#666',
+            weight: 1,
+            fillColor: '#ccc',
+            fillOpacity: 0.4
+          }).addTo(slojParcele);
+
+          poligon.bindTooltip(p.naziv, {
+            permanent: true,
+            direction: 'center',
+            className: 'orijentir-label'
+          });
+
+          poligon._id = p.id;
+        });
+
+        const params = new URLSearchParams(window.location.search);
+        const trazenaParcela = params.get('parcela');
+        if (trazenaParcela) istakniParcelu(trazenaParcela);
+      });
+  </script>
+</body>
+</html>
