@@ -15,7 +15,7 @@
       border: 1px solid #ccc;
       padding: 2px 6px;
       border-radius: 4px;
-      font-size: 13px;
+      font-size: 10px;
     }
     .kontrole {
       position: absolute;
@@ -129,7 +129,7 @@
           fillOpacity: jePoslednja ? 0.6 : 0.4
         }).addTo(slojParcele);
 
-        poligon.bindTooltip(p.naziv, {
+        poligon.bindTooltip(p.id, {
           permanent: true,
           direction: 'center',
           className: 'orijentir-label'
