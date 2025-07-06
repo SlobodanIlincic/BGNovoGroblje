@@ -112,14 +112,18 @@
       }
     });
 
-    const orijentiri = [
-      { naziv: "Kapela", koordinate: [44.8085, 20.4887] },
-      { naziv: "Česma", koordinate: [44.8079, 20.4899] },
-      { naziv: "Spomenik", koordinate: [44.8072, 20.4911] }
-    ];
-
+   fetch('orijentiri.json')
+  .then(res => res.json())
+  .then(orijentiri => {
     orijentiri.forEach(o => {
-      L.marker(o.koordinate, { icon: ikonaOrijentir1 })
+      const ikona = L.icon({
+        iconUrl: o.ikona || 'orijentir.png',
+        iconSize: [28, 28],
+        iconAnchor: [14, 28],
+        popupAnchor: [0, -28]
+      });
+
+      L.marker([o.lat, o.lng], { icon: ikona })
         .addTo(map)
         .bindPopup(o.naziv)
         .bindTooltip(o.naziv, {
@@ -129,6 +133,7 @@
           className: "orijentir-label"
         });
     });
+  });
 
     // === Prikaz parcela iz JSON fajla ===
     const slojParcele = L.layerGroup().addTo(map);
