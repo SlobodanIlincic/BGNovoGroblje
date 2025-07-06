@@ -158,7 +158,29 @@
       });
 
       nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje);
+      animirajKretanje(tacke, 800);
     }
+function animirajKretanje(tacke, brzina = 1000) {
+  if (tacke.length < 2) return;
+
+  const marker = L.marker(tacke[0], {
+    icon: L.icon({
+      iconUrl: 'walking.svg',
+      iconSize: [28, 28],
+      iconAnchor: [14, 28]
+    })
+  }).addTo(map);
+
+  let i = 1;
+  function pomeri() {
+    if (i >= tacke.length) return;
+    marker.setLatLng(tacke[i]);
+    i++;
+    setTimeout(pomeri, brzina);
+  }
+
+  pomeri();
+}
 
     function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
       tacke.forEach((latlng, i) => {
