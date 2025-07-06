@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Vizuelna ruta kroz tačke</title>
+  <title>Vizuelna ruta sa animacijom</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html, body { margin: 0; padding: 0; height: 100%; }
@@ -16,16 +16,6 @@
       padding: 2px 6px;
       border-radius: 4px;
       font-size: 11px;
-    }
-    .kontrole {
-      position: absolute;
-      top: 10px;
-      left: 70px;
-      z-index: 1000;
-      background: rgba(255,255,255,0.9);
-      padding: 6px;
-      border-radius: 6px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.2);
     }
     #navigacija {
       position: absolute;
@@ -40,16 +30,22 @@
       max-width: 300px;
       z-index: 1000;
     }
+    #kontrole {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.9);
+      padding: 6px 10px;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div class="kontrole">
-    <button id="undo">⏪ Poništi</button>
-    <button id="reset">🗑️ Obriši sve</button>
-    <select id="filterOrijentira">
-      <option value="svi">Prikaži sve orijentire</option>
-    </select>
+  <div id="kontrole">
+    <button onclick="pokreniAnimaciju()">▶️ Prikaži kretanje</button>
   </div>
   <div id="navigacija"></div>
 
@@ -65,122 +61,22 @@
     const ikonaGrob = L.icon({ iconUrl: 'grob.png', iconSize: [28, 28], iconAnchor: [14, 28] });
     const ikonaOrijentir = L.icon({ iconUrl: 'walking.svg', iconSize: [28, 28], iconAnchor: [14, 28] });
 
-    const slojOrijentiri = L.layerGroup().addTo(map);
-    const slojParcele = L.layerGroup().addTo(map);
-    let sviOrijentiri = [];
-
     const params = new URLSearchParams(window.location.search);
     const tacke = (params.get('wp') || '').split('|').map(coord => {
       const [lat, lng] = coord.split(',').map(Number);
       return L.latLng(lat, lng);
     }).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
 
-    const trazene = params.get('parcela')?.split(',') || [];
-    const nazivParcele = trazene[trazene.length - 1] || 'Nepoznato';
+    const nazivParcele = params.get('parcela')?.split(',').pop() || 'Nepoznato';
+    const tekstualnoVodjenje = [];
 
-    fetch('parcele.json')
-      .then(res => res.json())
-      .then(parcele => {
-        const filtrirane = parcele.filter(p => trazene.includes(p.id));
-        filtrirane.forEach((p, i) => {
-          const jePoslednja = i === filtrirane.length - 1;
-          const poligon = L.polygon(p.koordinate, {
-            color: jePoslednja ? 'red' : '#666',
-            weight: jePoslednja ? 3 : 1,
-            fillColor: jePoslednja ? '#f88' : '#ccc',
-            fillOpacity: jePoslednja ? 0.6 : 0.4
-          }).addTo(slojParcele);
-
-          poligon.bindTooltip(p.id, {
-            permanent: true,
-            direction: 'center',
-            className: 'orijentir-label'
-          });
-
-          if (jePoslednja) {
-            map.fitBounds(poligon.getBounds(), { padding: [30, 30] });
-          }
-        });
-      });
-
-    fetch('orijentiri.json')
-      .then(res => res.json())
-      .then(orijentiri => {
-        sviOrijentiri = orijentiri;
-        const tipovi = [...new Set(orijentiri.map(o => o.tip).filter(Boolean))];
-        const select = document.getElementById('filterOrijentira');
-        tipovi.forEach(tip => {
-          const opt = document.createElement('option');
-          opt.value = tip;
-          opt.textContent = tip.charAt(0).toUpperCase() + tip.slice(1);
-          select.appendChild(opt);
-        });
-        prikaziOrijentire('svi');
-      });
-
-    document.getElementById('filterOrijentira').addEventListener('change', e => {
-      prikaziOrijentire(e.target.value);
-    });
-
-    function prikaziOrijentire(tip) {
-      slojOrijentiri.clearLayers();
-      const tekstualnoVodjenje = [];
-
-      const filtrirani = tip === 'svi'
-        ? sviOrijentiri
-        : sviOrijentiri.filter(o => o.tip === tip);
-
-      filtrirani.forEach(o => {
-        const orijentirLatLng = L.latLng(o.lat, o.lng);
-        for (let i = 0; i < tacke.length; i++) {
-          const dist = orijentirLatLng.distanceTo(tacke[i]);
-          if (dist < 100 && !tekstualnoVodjenje.includes(o.naziv)) {
-            tekstualnoVodjenje.push(o.naziv);
-            break;
-          }
-        }
-
-        const ikona = L.icon({
-          iconUrl: o.ikona || 'orijentir.png',
-          iconSize: [28, 28],
-          iconAnchor: [14, 28]
-        });
-
-        L.marker([o.lat, o.lng], { icon: ikona })
-          .addTo(slojOrijentiri)
-          .bindPopup(o.naziv)
-          .bindTooltip(o.naziv, {
-            permanent: true,
-            direction: "top",
-            offset: [0, -10],
-            className: "orijentir-label"
-          });
-      });
-
+    if (tacke.length > 0) {
       nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje);
-      animirajKretanje(tacke, 8000);
     }
-function animirajKretanje(tacke, brzina = 1000) {
-  if (tacke.length < 2) return;
 
-  const marker = L.marker(tacke[0], {
-    icon: L.icon({
-      iconUrl: 'walking.svg',
-      iconSize: [28, 28],
-      iconAnchor: [14, 28]
-    })
-  }).addTo(map);
-
-  let i = 1;
-  function pomeri() {
-    if (i >= tacke.length) return;
-    marker.setLatLng(tacke[i]);
-    i++;
-    setTimeout(pomeri, brzina);
-  }
-
-  pomeri();
-}
+    function pokreniAnimaciju() {
+      animirajKretanje(tacke, 800);
+    }
 
     function nacrtajPutanju(tacke, nazivParcele, tekstualnoVodjenje) {
       tacke.forEach((latlng, i) => {
@@ -188,7 +84,7 @@ function animirajKretanje(tacke, brzina = 1000) {
         if (i === 0) ikona = ikonaUlaz;
         if (i === tacke.length - 1) ikona = ikonaGrob;
 
-        const marker = L.marker(latlng, { icon: ikona })
+        L.marker(latlng, { icon: ikona })
           .addTo(map)
           .bindPopup(i === 0 ? "Ulaz" : i === tacke.length - 1 ? nazivParcele : `Tačka ${i + 1}`)
           .bindTooltip(i === 0 ? "Ulaz" : i === tacke.length - 1 ? "Grob" : "", {
@@ -218,4 +114,32 @@ function animirajKretanje(tacke, brzina = 1000) {
         ➤ Parcela: ${nazivParcele}
       `;
     }
+
+    function animirajKretanje(tacke, brzina = 1000) {
+      if (tacke.length < 2) return;
+
+      const marker = L.marker(tacke[0], {
+        icon: L.icon({
+          iconUrl: 'walking.svg',
+          iconSize: [28, 28],
+          iconAnchor: [14, 28]
+        })
+      }).addTo(map);
+
+      let i = 1;
+      function pomeri() {
+        if (i >= tacke.length) {
+          marker.bindPopup("Stigli ste do groba").openPopup();
+          return;
+        }
+        marker.setLatLng(tacke[i]);
+        map.panTo(tacke[i]);
+        i++;
+        setTimeout(pomeri, brzina);
+      }
+
+      pomeri();
+    }
   </script>
+</body>
+</html>
