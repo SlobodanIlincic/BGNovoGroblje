@@ -88,7 +88,11 @@ const kliknuteLinije = [];
         ikona = ikonaGrob;
         marker = L.marker(latlng, { icon: ikona })
           .addTo(map)
-          .bindPopup("Grob")
+         .bindPopup(`
+  <strong>Grob: ${nazivParcele || 'Nepoznato'}</strong><br>
+  ${tekstualnoVodjenje.map(o => `➤ Prođite pored ${o}`).join('<br>')}<br>
+  ➤ Grob se nalazi u parceli ${nazivParcele || 'N/A'}
+`);
           .bindTooltip("Grob", {
             permanent: true,
             direction: "top",
@@ -144,7 +148,22 @@ map.on('click', function (e) {
         iconAnchor: [14, 28],
         popupAnchor: [0, -28]
       });
+let tekstualnoVodjenje = [];
 
+orijentiri.forEach(o => {
+  const orijentirLatLng = L.latLng(o.lat, o.lng);
+
+  for (let i = 0; i < tacke.length; i++) {
+    const dist = orijentirLatLng.distanceTo(tacke[i]);
+    if (dist < 20) { // prag u metrima
+      if (!tekstualnoVodjenje.includes(o.naziv)) {
+        tekstualnoVodjenje.push(o.naziv);
+      }
+      break;
+    }
+  }
+});
+      
       L.marker([o.lat, o.lng], { icon: ikona })
         .addTo(map)
         .bindPopup(o.naziv)
