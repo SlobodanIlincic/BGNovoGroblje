@@ -82,7 +82,7 @@
         const orijentirLatLng = L.latLng(o.lat, o.lng);
         for (let i = 0; i < tacke.length; i++) {
           const dist = orijentirLatLng.distanceTo(tacke[i]);
-          if (dist < 20) {
+          if (dist < 80) {
             if (!tekstualnoVodjenje.includes(o.naziv)) {
               tekstualnoVodjenje.push(o.naziv);
             }
