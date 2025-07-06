@@ -243,7 +243,7 @@ function najblizaUdaljenostDoPoligona(tacka, poligon) {
   }
 
   // Pronađi usputne parcele (koje nisu u URL-u)
-  const usputneParcele = new Set();
+/*  const usputneParcele = new Set();
   tacke.forEach(koord => {
     sveParcele.forEach(parcela => {
       if (!trazene.includes(parcela.id)) {
@@ -257,7 +257,7 @@ console.log("dist:", dist);
         }
       }
     });
-  });
+  });*/
 
   // Pronađi prosleđene parcele redosledom kojim su "obiđene"
   const prosledjeneParcelePoRedosledu = [];
@@ -279,15 +279,12 @@ console.log("dist:", dist);
 
   // Prikaz tekstualnog vođenja
   navDiv.innerHTML = `
-    <strong>Uputstvo do groba:</strong><br>
+    <strong>Putanja do groba:</strong><br>
     ${tekstualnoVodjenje.length > 0
       ? tekstualnoVodjenje.map(o => `➤ ${o}`).join('<br>')
       : '➤ Bez orijentira'}<br>
-    ${usputneParcele.size > 0
-      ? `➤ Pored parcela: ${[...usputneParcele].join(', ')}<br>`
-      : ''}
     ${prosledjeneParcelePoRedosledu.length > 0
-      ? `➤ Parcela: ${prosledjeneParcelePoRedosledu.join(' → ')}`
+      ? `➤ Pored parcele: ${prosledjeneParcelePoRedosledu.join(' → ')}`
       : `➤ Parcela: ${nazivParcele}`}
   `;
 }
