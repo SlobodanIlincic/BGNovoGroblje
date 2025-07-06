@@ -37,9 +37,12 @@
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    let tekstualnoVodjenje = [];
     const kliknuteTacke = [];
 const kliknutiMarkeri = [];
 const kliknuteLinije = [];
+  
+
     const map = L.map('map').setView([44.8, 20.5], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -86,19 +89,19 @@ const kliknuteLinije = [];
           });
       } else if (i === tacke.length - 1) {
         ikona = ikonaGrob;
-        marker = L.marker(latlng, { icon: ikona })
-          .addTo(map)
-         .bindPopup(`
-  <strong>Grob: ${nazivParcele || 'Nepoznato'}</strong><br>
-  ${tekstualnoVodjenje.map(o => `➤ Prođite pored ${o}`).join('<br>')}<br>
-  ➤ Grob se nalazi u parceli ${nazivParcele || 'N/A'}
-`);
-          .bindTooltip("Grob", {
-            permanent: true,
-            direction: "top",
-            offset: [0, -10],
-            className: "orijentir-label"
-          });
+marker = L.marker(latlng, { icon: ikonaGrob })
+  .addTo(map)
+  .bindPopup(`
+    <strong>Grob: ${nazivParcele}</strong><br>
+    ${tekstualnoVodjenje.map(o => `➤ Prođite pored ${o}`).join('<br>')}<br>
+    ➤ Grob se nalazi u parceli ${nazivParcele}
+  `)
+  .bindTooltip("Grob", {
+    permanent: true,
+    direction: "top",
+    offset: [0, -10],
+    className: "orijentir-label"
+  });
       } else {
         marker = L.marker(latlng, { icon: ikona })
           .addTo(map)
@@ -148,7 +151,7 @@ map.on('click', function (e) {
         iconAnchor: [14, 28],
         popupAnchor: [0, -28]
       });
-let tekstualnoVodjenje = [];
+
 
 orijentiri.forEach(o => {
   const orijentirLatLng = L.latLng(o.lat, o.lng);
@@ -163,7 +166,8 @@ orijentiri.forEach(o => {
     }
   }
 });
-      
+      nacrtajPutanju();
+
       L.marker([o.lat, o.lng], { icon: ikona })
         .addTo(map)
         .bindPopup(o.naziv)
@@ -227,7 +231,7 @@ fetch('parcele.json')
   .then(parcele => {
     const params = new URLSearchParams(window.location.search);
     const trazene = params.get('parcela')?.split(',') || [];
-
+  const nazivParcele = trazene[trazene.length - 1] || 'Nepoznato';
     const filtrirane = parcele.filter(p => trazene.includes(p.id));
 
     filtrirane.forEach((p, i) => {
@@ -251,6 +255,55 @@ fetch('parcele.json')
       }
     });
   });
+function nacrtajPutanju() {
+  tacke.forEach((latlng, i) => {
+    let ikona = ikonaOrijentir;
+    let marker = null;
+
+    if (i === 0) {
+      ikona = ikonaUlaz;
+      marker = L.marker(latlng, { icon: ikona })
+        .addTo(map)
+        .bindPopup("Ulaz")
+        .bindTooltip("Ulaz", {
+          permanent: true,
+          direction: "top",
+          offset: [0, -10],
+          className: "orijentir-label"
+        });
+    } else if (i === tacke.length - 1) {
+      ikona = ikonaGrob;
+      marker = L.marker(latlng, { icon: ikona })
+        .addTo(map)
+        .bindPopup(`
+          <strong>Grob: ${nazivParcele}</strong><br>
+          ${tekstualnoVodjenje.map(o => `➤ Prođite pored ${o}`).join('<br>')}<br>
+          ➤ Grob se nalazi u parceli ${nazivParcele}
+        `)
+        .bindTooltip("Grob", {
+          permanent: true,
+          direction: "top",
+          offset: [0, -10],
+          className: "orijentir-label"
+        });
+    } else {
+      marker = L.marker(latlng, { icon: ikona })
+        .addTo(map)
+        .bindPopup(`Tačka ${i + 1}`);
+    }
+  });
+
+  if (tacke.length > 1) {
+    L.polyline(tacke, {
+      color: 'gray',
+      weight: 3,
+      dashArray: '5, 5',
+      opacity: 0.8
+    }).addTo(map);
+    map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
+  }
+}
+    
   </script>
 </body>
 </html>
