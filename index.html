@@ -213,6 +213,29 @@
             .addTo(map)
             .bindPopup(`Tačka ${i + 1}`);
         }
+
+                L.polyline(tacke, {
+          color: 'gray',
+          weight: 3,
+          dashArray: '5, 5',
+          opacity: 0.8
+        }).addTo(map);
+        map.fitBounds(L.latLngBounds(tacke), { padding: [50, 50] });
+      }
+
+      // Prikaz tekstualnog vođenja u donjem levom uglu
+      const navDiv = document.getElementById('navigacija');
+      navDiv.innerHTML = `
+        <strong>Uputstvo do groba:</strong><br>
+        ${tekstualnoVodjenje.length > 0
+          ? tekstualnoVodjenje.map(o => `➤ ${o}`).join('<br>')
+          : '➤ Bez orijentira'}<br>
+        ➤ Parcela: ${nazivParcele}
+      `;
+    }
+  </script>
+</body>
+</html>
       });
 
       if (tacke.length > 1) {
