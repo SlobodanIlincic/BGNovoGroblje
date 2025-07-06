@@ -223,7 +223,7 @@ function najblizaUdaljenostDoPoligona(tacka, poligon) {
     L.marker(latlng, { icon: ikona })
       .addTo(map)
       .bindPopup(i === 0 ? "Ulaz" : i === tacke.length - 1 ? nazivParcele : `Tačka ${i + 1}`)
-      .bindTooltip(i === 0 ? "Ulaz" : i === tacke.length - 1 ? "Grob" : "", {
+      .bindTooltip(i === 0 ? "Ulaz" : i === tacke.length - 1 ? "Parcela" : "", {
         permanent: i === 0 || i === tacke.length - 1,
         direction: "top",
         offset: [0, -10],
@@ -315,7 +315,7 @@ function animirajKretanje(tacke, brzina = 1000) {
   let i = 1;
   function pomeri() {
     if (i >= tacke.length) {
-      marker.bindPopup("Stigli ste do groba").openPopup();
+      marker.bindPopup("Stigli ste do parcele").openPopup();
       return;
     }
 
