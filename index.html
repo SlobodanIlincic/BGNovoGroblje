@@ -202,30 +202,37 @@ document.getElementById('undo').addEventListener('click', () => {
       });
     }
 
-    fetch('parcele.json')
-      .then(res => res.json())
-      .then(parcele => {
-        parcele.forEach(p => {
-          const poligon = L.polygon(p.koordinate, {
-            color: '#666',
-            weight: 1,
-            fillColor: '#ccc',
-            fillOpacity: 0.4
-          }).addTo(slojParcele);
+const slojParcele = L.layerGroup().addTo(map);
 
-          poligon.bindTooltip(p.naziv, {
-            permanent: true,
-            direction: 'center',
-            className: 'orijentir-label'
-          });
+fetch('parcele.json')
+  .then(res => res.json())
+  .then(parcele => {
+    const params = new URLSearchParams(window.location.search);
+    const trazene = params.get('parcela')?.split(',') || [];
 
-          poligon._id = p.id;
-        });
+    const filtrirane = parcele.filter(p => trazene.includes(p.id));
 
-        const params = new URLSearchParams(window.location.search);
-        const trazenaParcela = params.get('parcela');
-        if (trazenaParcela) istakniParcelu(trazenaParcela);
+    filtrirane.forEach((p, i) => {
+      const jePoslednja = i === filtrirane.length - 1;
+
+      const poligon = L.polygon(p.koordinate, {
+        color: jePoslednja ? 'red' : '#666',
+        weight: jePoslednja ? 3 : 1,
+        fillColor: jePoslednja ? '#f88' : '#ccc',
+        fillOpacity: jePoslednja ? 0.6 : 0.4
+      }).addTo(slojParcele);
+
+      poligon.bindTooltip(p.naziv, {
+        permanent: true,
+        direction: 'center',
+        className: 'orijentir-label'
       });
+
+      if (jePoslednja) {
+        map.fitBounds(poligon.getBounds(), { padding: [30, 30] });
+      }
+    });
+  });
   </script>
 </body>
 </html>
